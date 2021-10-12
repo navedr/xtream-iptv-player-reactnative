@@ -17,7 +17,18 @@
     "react-test-renderer": "16.3.1"
   },
   "main": "node_modules/expo/AppEntry.js",
-  "scripts": {},
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "eject": "expo eject",
+    "publish": "expo publish",
+    "optimize": "expo optimize",
+    "build:ios": "expo build:ios",
+    "build:android": "expo build:android",
+    "pre-publish": "node pre-publish.js"
+  },
   "jest": {
     "preset": "jest-expo"
   },
