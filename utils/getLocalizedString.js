@@ -30,7 +30,7 @@ function getLangFile(code) {
 }
 
 function getTranslatedString(key, fallback, args, lang) {
-	lang = lang || getLanguageCode() || DefaultUserLang;
+	lang = lang || DefaultUserLang;
 
 	key = key.trim();
 

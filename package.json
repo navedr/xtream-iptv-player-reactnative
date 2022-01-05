@@ -1,19 +1,22 @@
 {
   "name": "xtream-iptv-player-reactnative",
-  "version": "0.2.0",
+  "version": "1.0.0",
   "private": true,
   "devDependencies": {
     "babel-eslint": "^10.1.0",
     "eslint": "^4.14.0",
     "eslint-config-airbnb": "^18.2.1",
+    "eslint-config-prettier": "^7.2.0",
     "eslint-config-react": "^1.1.7",
     "eslint-config-react-native": "^4.1.0",
     "eslint-plugin-flowtype": "^6.1.0",
     "eslint-plugin-import": "^2.25.1",
     "eslint-plugin-jsx-a11y": "^6.4.1",
+    "eslint-plugin-prettier": "^3.3.1",
     "eslint-plugin-react": "^7.26.1",
     "eslint-plugin-react-native": "^3.11.0",
     "jest-expo": "^42.1.0",
+    "prettier": "^2.2.1",
     "react-test-renderer": "^17.0.2"
   },
   "main": "node_modules/expo/AppEntry.js",
@@ -27,12 +30,14 @@
     "optimize": "expo optimize",
     "build:ios": "expo build:ios",
     "build:android": "expo build:android",
-    "pre-publish": "node pre-publish.js"
+    "pre-publish": "node pre-publish.js",
+    "prettier": "prettier --config .prettierrc.js *.{ts,tsx,js,jsx} --write"
   },
   "jest": {
     "preset": "jest-expo"
   },
   "dependencies": {
+    "@react-native-community/art": "^1.2.0",
     "base-64": "^0.1.0",
     "expo": "^42.0.0",
     "prop-types": "^15.7.2",
@@ -40,15 +45,18 @@
     "react-native": "https://github.com/expo/react-native/archive/sdk-42.0.0.tar.gz",
     "react-native-easy-toast": "^2.0.0",
     "react-native-elements": "^3.4.2",
+    "react-native-gesture-handler": "^1.10.2",
     "react-native-loader": "^1.3.1",
     "react-native-locale": "^0.0.19",
     "react-native-orientation": "^3.1.3",
     "react-native-progress": "^5.0.0",
     "react-native-simple-dialogs": "^1.4.0",
     "react-native-slider": "^0.11.0",
+    "react-native-svg": "^12.1.1",
     "react-native-vlc-player": "^0.2.3",
     "react-native-vlcplayer": "^0.1.2",
     "react-navigation": "^4.4.4",
+    "react-navigation-stack": "^2.10.4",
     "sprintf-js": "^1.1.2"
   },
   "repository": "http://zgrav.pro:8080/zgrav/xtream-iptv-player-reactnative"
