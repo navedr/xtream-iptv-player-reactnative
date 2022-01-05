@@ -1,6 +1,6 @@
 import buildUrl from '../utils/buildUrl';
 
-export function getSeriesCategories(url, username, password, category_id) {
+export function getSeriesCategories(url: string, username: string, password: string, category_id: string) {
 	try {
 		return fetch(buildUrl(url + '/player_api.php', {
 			username, password, action: 'get_series', category_id,

@@ -18,14 +18,12 @@ const NavigationStack = createStackNavigator({
         screen: LoginScreen,
         navigationOptions: {
             headerLeft: null,
-            gesturesEnabled: false,
         },
     },
     Account: {
         screen: AccountScreen,
         navigationOptions: {
             headerLeft: null,
-            gesturesEnabled: false,
         },
     },
     Live: {

@@ -1,6 +1,6 @@
 import buildUrl from '../utils/buildUrl';
 
-function getCategories(url, username, password, buttonIndex) {
+function getCategories(url: string, username: string, password: string, buttonIndex: number) {
 	let action = null;
 
 	if (buttonIndex === 0) {

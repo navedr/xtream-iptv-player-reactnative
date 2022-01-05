@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { Alert, AsyncStorage, Image, NetInfo, StyleSheet, TextInput, ScrollView } from "react-native";
+import { Alert, AsyncStorage, Image, StyleSheet, TextInput, ScrollView } from "react-native";
 import { Button } from "react-native-elements";
 
 import Toast, { DURATION } from "react-native-easy-toast";
@@ -36,7 +36,7 @@ function handleFirstConnectivityChange(connectionInfo) {
         );
     }
 
-    NetInfo.removeEventListener("connectionChange", handleFirstConnectivityChange);
+    // NetInfo.removeEventListener("connectionChange", handleFirstConnectivityChange);
 }
 
 let tmpUrl = null;
@@ -72,7 +72,7 @@ export default class App extends Component {
             throw new Error(error);
         }
 
-        NetInfo.addEventListener("connectionChange", handleFirstConnectivityChange);
+        // NetInfo.addEventListener("connectionChange", handleFirstConnectivityChange);
     }
 
     /* eslint-enable react/no-did-mount-set-state */

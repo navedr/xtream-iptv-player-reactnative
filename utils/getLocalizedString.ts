@@ -2,15 +2,6 @@ import { vsprintf } from 'sprintf-js';
 
 const DefaultUserLang = 'en';
 
-async function getLanguageCode() {
-	const Locale = require('react-native-locale');
-	const getLocaleConstants = await Locale.constants();
-	const systemLanguage = getLocaleConstants.localeIdentifier;
-
-	const languageCode = systemLanguage.substring(0, 2);
-	return languageCode;
-}
-
 function getLangFile(code) {
 
 	let loadLang = null;
@@ -29,7 +20,7 @@ function getLangFile(code) {
 	return loadLang;
 }
 
-function getTranslatedString(key, fallback, args, lang) {
+function getTranslatedString(key, fallback=null, args=null, lang=null) {
 	lang = lang || DefaultUserLang;
 
 	key = key.trim();
@@ -70,4 +61,4 @@ function extKey(obj, str) {
 	return obj;
 }
 
-module.exports = getTranslatedString;
+export default getTranslatedString;

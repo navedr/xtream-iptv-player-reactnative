@@ -25,9 +25,6 @@
 		"react/jsx-filename-extension": [1, { "extensions": [".js", ".jsx"] }],
 		"arrow-body-style": 0,
 		"array-bracket-spacing": [0, "always"],
-		"camelcase": [1, {
-			"properties": "never"
-		}],
 		"comma-dangle": [1, "always-multiline"],
 		"consistent-return": 1,
 		"func-names": 0,

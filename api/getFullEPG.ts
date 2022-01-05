@@ -1,6 +1,6 @@
 import buildUrl from '../utils/buildUrl';
 
-function getFullEPG(url, username, password, stream_id) {
+function getFullEPG(url: string, username: string, password: string, stream_id: string) {
 	try {
 		return fetch(buildUrl(url + '/player_api.php', {
 			username, password, action: 'get_simple_data_table', stream_id,

@@ -1,6 +1,6 @@
 import buildUrl from '../utils/buildUrl';
 
-function getChannels(url, username, password, category_id) {
+function getChannels(url: string, username: string, password: string, category_id: string) {
 	try {
 		return fetch(buildUrl(url + '/player_api.php', {
 			username, password, action: 'get_live_streams', category_id,

@@ -1,6 +1,6 @@
 import buildUrl from '../utils/buildUrl';
 
-function getEPG(url, username, password, stream_id) {
+function getEPG(url: string, username: string, password: string, stream_id: string) {
 	try {
 		return fetch(buildUrl(url + '/player_api.php', {
 			username, password, action: 'get_short_epg', stream_id, limit: 1,
