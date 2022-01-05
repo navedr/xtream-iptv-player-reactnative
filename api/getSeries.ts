@@ -7,13 +7,13 @@ export function getSeriesCategories(url: string, username: string, password: str
 		}), { method: 'GET' })
 			.then((response) => {
 				if (!response.ok) {
-					throw new Error('getSeriesCategories', new Error(`Response status ${response.status}`));
+					throw new Error(`Response status ${response.status}`);
 				}
 
 				const contentType = response.headers.get('content-type');
 
 				if (!contentType || contentType.indexOf('application/json') === -1) {
-					throw new Error('getSeriesCategories', new Error('Response is not json'));
+					throw new Error('Response is not json');
 				}
 
 				return response.json();
@@ -30,13 +30,13 @@ export function getSeries(url, username, password, series_id) {
 		}), { method: 'GET' })
 			.then((response) => {
 				if (!response.ok) {
-					throw new Error('getSeries', new Error(`Response status ${response.status}`));
+					throw new Error(`Response status ${response.status}`);
 				}
 
 				const contentType = response.headers.get('content-type');
 
 				if (!contentType || contentType.indexOf('application/json') === -1) {
-					throw new Error('getSeries', new Error('Response is not json'));
+					throw new Error('Response is not json');
 				}
 
 				return response.json();

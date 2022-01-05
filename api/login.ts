@@ -1,17 +1,17 @@
 import buildUrl from '../utils/buildUrl';
 
-function Login(url, username, password) {
+function login(url, username, password) {
   try {
     return fetch(buildUrl(url + '/player_api.php', { username, password }), { method: 'GET' })
     .then((response) => {
       if (!response.ok) {
-        throw new Error('Login', new Error(`Response status ${response.status}`));
+        throw new Error(`Response status ${response.status}`);
       }
 
       const contentType = response.headers.get('content-type');
 
       if (!contentType || contentType.indexOf('application/json') === -1) {
-        throw new Error('Login', new Error('Response is not json'));
+        throw new Error('Response is not json');
       }
 
       return response.json();
@@ -21,4 +21,4 @@ function Login(url, username, password) {
   }
 }
 
-export default Login;
+export default login;

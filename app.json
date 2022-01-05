@@ -2,12 +2,12 @@
   "expo": {
     "sdkVersion": "42.0.0",
     "ios": {
-      "bundleIdentifier": "z.reactnative.iptvplayer",
+      "bundleIdentifier": "com.innovationzunlimited.iptvplayer",
       "supportsTablet": true,
       "userInterfaceStyle": "automatic"
     },
     "android": {
-      "package": "z.reactnative.iptvplayer"
+      "package": "com.innovationzunlimited.iptvplayer"
     },
     "name": "xtream-iptv-player-reactnative",
     "slug": "xtream-iptv-player-reactnative",

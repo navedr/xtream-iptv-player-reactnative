@@ -7,13 +7,13 @@ function getVODs(url, username, password, category_id) {
 		}), { method: 'GET' })
 			.then((response) => {
 				if (!response.ok) {
-					throw new Error('getVODs', new Error(`Response status ${response.status}`));
+					throw new Error(`Response status ${response.status}`);
 				}
 
 				const contentType = response.headers.get('content-type');
 
 				if (!contentType || contentType.indexOf('application/json') === -1) {
-					throw new Error('getVODs', new Error('Response is not json'));
+					throw new Error('Response is not json');
 				}
 
 				return response.json();

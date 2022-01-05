@@ -1,12 +1,14 @@
-import React, { Component } from "react";
-import { Alert, AsyncStorage, Image, StyleSheet, TextInput, ScrollView } from "react-native";
+import * as React from "react";
+import { Alert, Image, StyleSheet, TextInput, ScrollView } from "react-native";
+import AsyncStorage from "@react-native-community/async-storage";
 import { Button } from "react-native-elements";
 
 import Toast, { DURATION } from "react-native-easy-toast";
 
-import Login from "./api/login";
+import login from "./api/login";
 
 import getLocalizedString from "./utils/getLocalizedString";
+import { NavigationInjectedProps } from "react-navigation";
 
 const styles = StyleSheet.create({
     container: {
@@ -41,16 +43,20 @@ function handleFirstConnectivityChange(connectionInfo) {
 
 let tmpUrl = null;
 
-export default class App extends Component {
-    /* eslint-disable react/sort-comp */
-    state = {
+export default class Login extends React.PureComponent<
+    NavigationInjectedProps,
+    {
+        url: string;
+        username: string;
+        password: string;
+    }
+> {
+    public state = {
         url: "",
         username: "",
         password: "",
     };
-    /* eslint-enable react/sort-comp */
-
-    /* eslint-disable react/no-did-mount-set-state */
+    private toast;
     async componentDidMount() {
         try {
             const url = await AsyncStorage.getItem("@IPTVPlayer:url");
@@ -81,21 +87,21 @@ export default class App extends Component {
         const { url, username, password } = this.state;
 
         if (!url) {
-            this.toast.show(getLocalizedString("login.toastEmptyURL"), DURATION.LENGTH_LONG);
+            this.toast.show(getLocalizedString("login.toastEmptyURL"), DURATION.LENGTH_SHORT);
             return;
         }
         if (!url.startsWith("http") || url.startsWith("https")) {
-            this.toast.show(getLocalizedString("login.toastInvalidURL"), DURATION.LENGTH_LONG);
+            this.toast.show(getLocalizedString("login.toastInvalidURL"), DURATION.LENGTH_SHORT);
             return;
         }
 
         if (!username) {
-            this.toast.show(getLocalizedString("login.toastUsername"), DURATION.LENGTH_LONG);
+            this.toast.show(getLocalizedString("login.toastUsername"), DURATION.LENGTH_SHORT);
             return;
         }
 
         if (!password) {
-            this.toast.show(getLocalizedString("login.toastPassword"), DURATION.LENGTH_LONG);
+            this.toast.show(getLocalizedString("login.toastPassword"), DURATION.LENGTH_SHORT);
             return;
         }
 
@@ -112,7 +118,7 @@ export default class App extends Component {
             throw new Error(error);
         }
 
-        const loginReply = await Login(url, username, password);
+        const loginReply = await login(url, username, password);
 
         if (loginReply.user_info.auth === 1) {
             const { navigate } = this.props.navigation;
@@ -124,7 +130,7 @@ export default class App extends Component {
                 user_info: loginReply.user_info,
             });
         } else {
-            this.toast.show(getLocalizedString("login.toastError"), DURATION.LENGTH_LONG);
+            this.toast.show(getLocalizedString("login.toastError"), DURATION.LENGTH_SHORT);
         }
     }
 

@@ -1,31 +1,19 @@
-import React, { Component } from "react";
-import { ActivityIndicator, Alert, AsyncStorage, Button, StyleSheet, Text, ScrollView, View } from "react-native";
+import * as React from "react";
+import { ActivityIndicator, Alert, Button, StyleSheet, Text, ScrollView, View } from "react-native";
+import AsyncStorage from "@react-native-community/async-storage";
 import { ListItem, SearchBar } from "react-native-elements";
-
 import Toast, { DURATION } from "react-native-easy-toast";
-
 import getCategories from "./api/getCategories";
 import getChannels from "./api/getChannels";
-
 import getLocalizedString from "./utils/getLocalizedString";
-
 import SegmentedButton from "./utils/segmentedButton";
+import { sortBy } from "lodash";
+import { NavigationInjectedProps } from "react-navigation";
 
-let categoriesAndChannels = [];
-
-let categoriesLeft = 0;
-let channelsFetched = 0;
-
-let loadingChannelsFromCategories = true;
-
-let menuItems = [];
-let listItems = [];
-let filteredList = [];
-let weAreSearching = false;
-
-let activityIndicator = <ActivityIndicator animating hidesWhenStopped size="large" />;
-let activityIndicatorText = (
-    <Text>{getLocalizedString("live.activityIndicatorText", null, [categoriesLeft, channelsFetched])}</Text>
+const ActivityIndicatorText = React.memo<{ categoriesLeft: number; channelsFetched: number }>(
+    ({ categoriesLeft, channelsFetched }) => (
+        <Text>{getLocalizedString("live.activityIndicatorText", null, [categoriesLeft, channelsFetched])}</Text>
+    ),
 );
 
 const colors = {
@@ -70,50 +58,78 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-class LiveScreen extends Component {
+class LiveScreen extends React.PureComponent<
+    NavigationInjectedProps,
+    {
+        categoriesAndChannels: any[];
+        categoriesLeft: number;
+        channelsFetched: number;
+        loadingChannelsFromCategories: boolean;
+        menuItems: any[];
+        listItems: any[];
+        filteredList: any[];
+        weAreSearching: boolean;
+    }
+> {
+    public state = {
+        categoriesAndChannels: [],
+        categoriesLeft: 0,
+        channelsFetched: 0,
+        loadingChannelsFromCategories: true,
+        menuItems: [],
+        listItems: [],
+        filteredList: [],
+        weAreSearching: false,
+    };
+    private search;
+    private toast;
+
     async componentWillMount() {
-        this.clearOnEmpty();
+        let categoriesAndChannels;
+        this.setState({
+            loadingChannelsFromCategories: true,
+        });
+        let menuItems = [];
 
         const liveArray = await AsyncStorage.getItem("@IPTVPlayer:LiveArray");
         if (liveArray && liveArray.length > 0) {
             categoriesAndChannels = JSON.parse(liveArray);
-
-            categoriesAndChannels.forEach(c => {
-                menuItems.push({ text: c.category_name, data: [] });
-
-                c.channels.forEach(ch => {
-                    menuItems[menuItems.length - 1].data.push(ch);
-                });
-            });
-
-            menuItems.sort(function (a, b) {
-                return a.text > b.text;
-            });
-
-            if (menuItems.length) {
-                this.onCategoryButton(null, 0);
-            }
-
-            loadingChannelsFromCategories = false;
-
-            this.forceUpdate();
-
-            return;
+        } else {
+            categoriesAndChannels = await this.getCategoriesFromServer();
         }
 
+        categoriesAndChannels.forEach(c => {
+            menuItems.push({ text: c.category_name, data: [] });
+            c.channels.forEach(ch => {
+                menuItems[menuItems.length - 1].data.push(ch);
+            });
+        });
+
+        menuItems = sortBy(menuItems, "text");
+        if (menuItems.length) {
+            this.selectCategory(null, 0);
+        }
+        this.setState({
+            loadingChannelsFromCategories: false,
+            menuItems,
+            categoriesAndChannels,
+        });
+    }
+
+    private async getCategoriesFromServer() {
+        let categoriesAndChannels = [];
         const { url, username, password, buttonIndex } = this.props.navigation.state.params;
 
         await getCategories(url, username, password, buttonIndex).then(r => {
             categoriesAndChannels.push(...r);
-
-            /* eslint-disable no-return-assign */
             categoriesAndChannels.forEach((o, i, a) => (a[i].channels = []));
-            /* eslint-enable no-return-assign */
         });
-
-        categoriesLeft = categoriesAndChannels.length;
-
-        /* eslint-disable no-restricted-syntax, guard-for-in, no-await-in-loop */
+        let channelsFetched = 0;
+        let categoriesLeft = categoriesAndChannels.length;
+        this.setState({
+            categoriesLeft,
+            channelsFetched,
+        });
         for (const category in categoriesAndChannels) {
             await sleep(1500);
             categoriesAndChannels[category].channels = await getChannels(
@@ -122,16 +138,12 @@ class LiveScreen extends Component {
                 password,
                 categoriesAndChannels[category].category_id,
             );
-
             categoriesLeft--;
-
             channelsFetched += categoriesAndChannels[category].channels.length;
-
-            activityIndicatorText = (
-                <Text>{getLocalizedString("live.activityIndicatorText", null, [categoriesLeft, channelsFetched])}</Text>
-            );
-
-            this.forceUpdate();
+            this.setState({
+                categoriesLeft,
+                channelsFetched,
+            });
         }
 
         for (const category in categoriesAndChannels) {
@@ -139,7 +151,6 @@ class LiveScreen extends Component {
                 categoriesAndChannels[category] = null;
             }
         }
-        /* eslint-disable no-restricted-syntax, guard-for-in, no-await-in-loop */
 
         categoriesAndChannels = categoriesAndChannels.filter(x => x);
 
@@ -148,37 +159,105 @@ class LiveScreen extends Component {
         } catch (error) {
             throw new Error(error);
         }
+        return categoriesAndChannels;
+    }
 
-        categoriesAndChannels.forEach(c => {
-            menuItems.push({ text: c.category_name, data: [] });
+    selectCategory(btn, index) {
+        const { menuItems } = this.state;
+        const { url, username, password } = this.props.navigation.state.params;
 
-            c.channels.forEach(ch => {
-                menuItems[menuItems.length - 1].data.push(ch);
-            });
+        this.setState({
+            weAreSearching: true,
         });
 
-        menuItems.sort(function (a, b) {
-            return a.text > b.text;
-        });
+        let listItems = [];
 
-        if (menuItems.length) {
-            this.onCategoryButton(null, 0);
+        if (this.search && this.search.clearText) {
+            this.search.clearText();
         }
 
-        loadingChannelsFromCategories = false;
+        menuItems[index].data.forEach(ch => {
+            if (!ch.name.length) {
+                return;
+            }
+            let chItem;
 
-        activityIndicator = null;
-        activityIndicatorText = null;
+            if (ch.name.charAt(0) !== "(" && !isLetterOrNumber(ch.name.charAt(0))) {
+                chItem = (
+                    <Button key={ch.stream_id} disabled onPress={() => {}} style={styles.listItem} title={ch.name} />
+                );
+            } else {
+                chItem = (
+                    <ListItem
+                        key={ch.stream_id}
+                        avatar={
+                            ch.stream_icon.startsWith("http") ||
+                            (ch.stream_icon.startsWith("https") && { uri: ch.stream_icon })
+                        }
+                        containerStyle={{ borderBottomWidth: 0 }}
+                        onPress={() =>
+                            this.props.navigation.navigate("LiveChannel", {
+                                url,
+                                username,
+                                password,
+                                ch,
+                            })
+                        }
+                        roundAvatar
+                        title={ch.name}
+                    />
+                );
+            }
 
-        this.forceUpdate();
+            listItems.push(chItem);
+        });
+
+        this.setState({
+            listItems,
+            weAreSearching: false,
+        });
+    }
+
+    searchForChannels(searchText) {
+        const { listItems } = this.state;
+        const text = searchText.toLowerCase();
+
+        if (!text) {
+            this.setState({
+                weAreSearching: false,
+            });
+            return;
+        }
+
+        let filteredList = listItems.filter(item => {
+            return item.props.title.toLowerCase().match(text);
+        });
+
+        filteredList = sortBy(filteredList, "title");
+
+        this.setState({
+            filteredList,
+            weAreSearching: true,
+        });
     }
 
     render() {
+        const {
+            loadingChannelsFromCategories,
+            categoriesAndChannels,
+            menuItems,
+            weAreSearching,
+            listItems,
+            filteredList,
+            categoriesLeft,
+            channelsFetched,
+        } = this.state;
+
         if (loadingChannelsFromCategories) {
             return (
                 <ScrollView contentContainerStyle={styles.activityContainer}>
-                    {activityIndicator}
-                    {activityIndicatorText}
+                    <ActivityIndicator animating hidesWhenStopped size="large" />
+                    <ActivityIndicatorText categoriesLeft={categoriesLeft} channelsFetched={channelsFetched} />
                 </ScrollView>
             );
         }
@@ -201,7 +280,7 @@ class LiveScreen extends Component {
             <ScrollView contentContainerStyle={styles.listContainer}>
                 <SegmentedButton
                     items={menuItems}
-                    onSegmentBtnPress={(btn, index) => this.onCategoryButton(btn, index)}
+                    onSegmentBtnPress={(btn, index) => this.selectCategory(btn, index)}
                 />
                 <View>
                     <SearchBar
@@ -221,131 +300,6 @@ class LiveScreen extends Component {
                 />
             </ScrollView>
         );
-    }
-
-    onCategoryButton(btn, index) {
-        const { url, username, password } = this.props.navigation.state.params;
-
-        weAreSearching = false;
-        filteredList = [];
-        if (this.search && this.search.clearText) {
-            this.search.clearText();
-        }
-
-        listItems = [];
-
-        menuItems[index].data.forEach(ch => {
-            let chItem = null;
-
-            if (!ch.name.length) {
-                return;
-            }
-
-            if (ch.name.charAt(0) !== "(" && !isLetterOrNumber(ch.name.charAt(0))) {
-                chItem = (
-                    <Button key={ch.stream_id} disabled onPress={() => {}} style={styles.listItem} title={ch.name} />
-                );
-
-                listItems.push(chItem);
-
-                return;
-            }
-
-            chItem =
-                ch.stream_icon.startsWith("http") || ch.stream_icon.startsWith("https") ? (
-                    <ListItem
-                        key={ch.stream_id}
-                        avatar={{ uri: ch.stream_icon }}
-                        containerStyle={{ borderBottomWidth: 0 }}
-                        onPress={() =>
-                            this.props.navigation.navigate("LiveChannel", {
-                                url,
-                                username,
-                                password,
-                                ch,
-                            })
-                        }
-                        roundAvatar
-                        title={ch.name}
-                    />
-                ) : (
-                    <ListItem
-                        key={ch.stream_id}
-                        containerStyle={{ borderBottomWidth: 0 }}
-                        onPress={() =>
-                            this.props.navigation.navigate("LiveChannel", {
-                                url,
-                                username,
-                                password,
-                                ch,
-                            })
-                        }
-                        roundAvatar
-                        title={ch.name}
-                    />
-                );
-
-            listItems.push(chItem);
-        });
-
-        this.forceUpdate();
-    }
-
-    clearOnEmpty() {
-        categoriesAndChannels = [];
-
-        categoriesLeft = 0;
-        channelsFetched = 0;
-
-        loadingChannelsFromCategories = true;
-
-        menuItems = [];
-        listItems = [];
-        filteredList = [];
-        weAreSearching = false;
-
-        activityIndicator = <ActivityIndicator animating hidesWhenStopped size="large" />;
-        activityIndicatorText = (
-            <Text>{getLocalizedString("live.activityIndicatorText", null, [categoriesLeft, channelsFetched])}</Text>
-        );
-
-        return this;
-    }
-
-    searchForChannels(getText) {
-        filteredList = [];
-
-        const text = getText.toLowerCase();
-
-        if (!text || text === "") {
-            weAreSearching = false;
-
-            this.forceUpdate();
-
-            return;
-        }
-
-        filteredList = listItems.filter(item => {
-            return item.props.title.toLowerCase().match(text);
-        });
-
-        if (!filteredList.length) {
-            weAreSearching = false;
-
-            this.toast.show(getLocalizedString("live.filterChannelsNotFound"), DURATION.LENGTH_LONG);
-
-            this.forceUpdate();
-
-            return;
-        }
-
-        weAreSearching = true;
-
-        filteredList.sort(function (a, b) {
-            return a.title > b.title;
-        });
-
-        this.forceUpdate();
     }
 }
 

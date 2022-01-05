@@ -15,13 +15,13 @@ function getCategories(url: string, username: string, password: string, buttonIn
 		return fetch(buildUrl(url + '/player_api.php', { username, password, action }), { method: 'GET' })
 			.then((response) => {
 				if (!response.ok) {
-					throw new Error('getCategories', new Error(`Response status ${response.status}`));
+					throw new Error(`Response status ${response.status}`);
 				}
 
 				const contentType = response.headers.get('content-type');
 
 				if (!contentType || contentType.indexOf('application/json') === -1) {
-					throw new Error('getCategories', new Error('Response is not json'));
+					throw new Error('Response is not json');
 				}
 
 				return response.json();
