@@ -9,7 +9,7 @@ import getVODs from "./api/getVODs";
 
 import getLocalizedString from "./utils/getLocalizedString";
 
-import SegmentedButton from "./utils/segmentedButton";
+import SegmentedButton from "./utils/SegmentedButton";
 
 let categoriesAndVODs = [];
 

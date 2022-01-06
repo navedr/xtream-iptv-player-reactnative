@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "devDependencies": {
+    "@types/lodash": "^4.14.178",
     "@types/react": "^17.0.38",
     "@types/react-native": "^0.66.11",
     "babel-eslint": "^10.1.0",
@@ -20,8 +21,7 @@
     "jest-expo": "^42.1.0",
     "prettier": "^2.2.1",
     "react-test-renderer": "^17.0.2",
-    "typescript": "^4.5.4",
-    "@types/lodash": "^4.14.178"
+    "typescript": "^4.5.4"
   },
   "main": "node_modules/expo/AppEntry.js",
   "scripts": {
@@ -45,6 +45,7 @@
     "@react-native-community/async-storage": "^1.12.1",
     "base-64": "^0.1.0",
     "expo": "^42.0.0",
+    "expo-av": "^10.2.0",
     "lodash": "^4.17.21",
     "prop-types": "^15.7.2",
     "react": "^17.0.2",
@@ -59,6 +60,7 @@
     "react-native-simple-dialogs": "^1.4.0",
     "react-native-slider": "^0.11.0",
     "react-native-svg": "^12.1.1",
+    "react-native-video": "^5.2.0",
     "react-native-vlc-player": "^0.2.3",
     "react-native-vlcplayer": "^0.1.2",
     "react-navigation": "^4.4.4",

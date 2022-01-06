@@ -132,6 +132,7 @@ export default class SegmentedButton extends React.PureComponent<
             return null;
         }
         const activeItemIndex = this.state.activeIndex;
+        const onSegmentBtnPress = (e, index) => this._onSegmentBtnPress(e, index)
         const doms = navItems.map(function (item, index) {
             const key = `segment_${index}`;
             let label;
@@ -156,7 +157,7 @@ export default class SegmentedButton extends React.PureComponent<
                 <TouchableOpacity
                     key={key}
                     // ref={index}
-                    onPress={e => this._onSegmentBtnPress(e, index)}
+                    onPress={e => onSegmentBtnPress(e, index)}
                     style={[styles.navItem, {}]}>
                     <Text style={[styles.navItemText, { color: tinyColor }]}>{label}</Text>
                 </TouchableOpacity>

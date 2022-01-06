@@ -6,7 +6,7 @@ import Toast, { DURATION } from "react-native-easy-toast";
 import getCategories from "./api/getCategories";
 import getChannels from "./api/getChannels";
 import getLocalizedString from "./utils/getLocalizedString";
-import SegmentedButton from "./utils/segmentedButton";
+import SegmentedButton from "./utils/SegmentedButton";
 import { sortBy } from "lodash";
 import { NavigationInjectedProps } from "react-navigation";
 
@@ -84,7 +84,7 @@ class LiveScreen extends React.PureComponent<
     private search;
     private toast;
 
-    async componentWillMount() {
+    async componentDidMount() {
         let categoriesAndChannels;
         this.setState({
             loadingChannelsFromCategories: true,
@@ -106,14 +106,18 @@ class LiveScreen extends React.PureComponent<
         });
 
         menuItems = sortBy(menuItems, "text");
-        if (menuItems.length) {
-            this.selectCategory(null, 0);
-        }
-        this.setState({
-            loadingChannelsFromCategories: false,
-            menuItems,
-            categoriesAndChannels,
-        });
+        this.setState(
+            {
+                loadingChannelsFromCategories: false,
+                menuItems,
+                categoriesAndChannels,
+            },
+            () => {
+                if (menuItems.length) {
+                    this.selectCategory(null, 0);
+                }
+            },
+        );
     }
 
     private async getCategoriesFromServer() {
@@ -144,6 +148,9 @@ class LiveScreen extends React.PureComponent<
                 categoriesLeft,
                 channelsFetched,
             });
+            if (categoriesAndChannels.length - categoriesLeft == 10) {
+                break;
+            }
         }
 
         for (const category in categoriesAndChannels) {
@@ -184,16 +191,22 @@ class LiveScreen extends React.PureComponent<
 
             if (ch.name.charAt(0) !== "(" && !isLetterOrNumber(ch.name.charAt(0))) {
                 chItem = (
-                    <Button key={ch.stream_id} disabled onPress={() => {}} style={styles.listItem} title={ch.name} />
+                    <Button
+                        key={ch.stream_id}
+                        disabled
+                        onPress={() => {}}
+                        // style={styles.listItem}
+                        title={ch.name}
+                    />
                 );
             } else {
                 chItem = (
                     <ListItem
                         key={ch.stream_id}
-                        avatar={
-                            ch.stream_icon.startsWith("http") ||
-                            (ch.stream_icon.startsWith("https") && { uri: ch.stream_icon })
-                        }
+                        // avatar={
+                        //     ch.stream_icon.startsWith("http") ||
+                        //     (ch.stream_icon.startsWith("https") && { uri: ch.stream_icon })
+                        // }
                         containerStyle={{ borderBottomWidth: 0 }}
                         onPress={() =>
                             this.props.navigation.navigate("LiveChannel", {
@@ -203,9 +216,10 @@ class LiveScreen extends React.PureComponent<
                                 ch,
                             })
                         }
-                        roundAvatar
-                        title={ch.name}
-                    />
+                        hasTVPreferredFocus
+                        tvParallaxProperties>
+                        <Text>{ch.name}</Text>
+                    </ListItem>
                 );
             }
 

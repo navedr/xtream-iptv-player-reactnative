@@ -9,7 +9,7 @@ import { getSeriesCategories, getSeries } from "./api/getSeries";
 
 import getLocalizedString from "./utils/getLocalizedString";
 
-import SegmentedButton from "./utils/segmentedButton";
+import SegmentedButton from "./utils/SegmentedButton";
 
 let categoriesAndSeries = [];
 

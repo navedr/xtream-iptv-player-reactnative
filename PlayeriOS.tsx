@@ -54,8 +54,8 @@ export default class PlayeriOS extends Component {
 
     componentWillUnmount() {
         AppState.removeEventListener("change", this._handleAppStateChange);
-        Orientation.lockToPortrait();
-        Orientation.unlockAllOrientations();
+        // Orientation.lockToPortrait();
+        // Orientation.unlockAllOrientations();
     }
 
     _handleAppStateChange = nextAppState => {

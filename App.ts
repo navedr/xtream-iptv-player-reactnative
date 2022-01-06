@@ -12,18 +12,19 @@ import VODChannelScreen from "./VODChannel";
 import SeriesScreen from "./Series";
 import SeriesEpisodePickerScreen from "./SeriesEpisodePicker";
 import SeriesEpisodeViewerScreen from "./SeriesEpisodeViewer";
+import VideoPlayer from "./VideoPlayer";
 
 const NavigationStack = createStackNavigator({
     Login: {
         screen: LoginScreen,
         navigationOptions: {
-            headerLeft: null,
+            headerLeft: () => null,
         },
     },
     Account: {
         screen: AccountScreen,
         navigationOptions: {
-            headerLeft: null,
+            headerLeft: () => null,
         },
     },
     Live: {
@@ -38,6 +39,9 @@ const NavigationStack = createStackNavigator({
     PlayeriOS: {
         screen: PlayeriOS,
     },
+    // VideoPlayer: {
+    //     screen: VideoPlayer,
+    // },
     VODs: {
         screen: VODScreen,
     },

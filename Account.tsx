@@ -1,10 +1,10 @@
-import React, { Component } from "react";
-import { Alert, AsyncStorage, StyleSheet, Text, ScrollView } from "react-native";
+import * as React from "react";
+import { Alert, StyleSheet, Text, ScrollView } from "react-native";
 import { Button, ButtonGroup, Card, Icon } from "react-native-elements";
-
+import AsyncStorage from "@react-native-community/async-storage";
 import timeConverter from "./utils/timeConverter";
-
 import getLocalizedString from "./utils/getLocalizedString";
+import { NavigationInjectedProps } from "react-navigation";
 
 const color = {
     black: "#000",
@@ -19,19 +19,17 @@ const styles = StyleSheet.create({
     },
 });
 
-class Account extends Component {
-    /* eslint-disable react/sort-comp */
+class Account extends React.PureComponent<NavigationInjectedProps, {}> {
     static navigationOptions = ({ navigation }) => {
         const { state } = navigation;
         const { signOutButton } = "params" in state && state.params;
 
         return {
-            headerRight: signOutButton && signOutButton(),
+            headerRight: () => signOutButton && signOutButton(),
         };
     };
-    /* eslint-enable react/sort-comp */
 
-    componentWillMount() {
+    componentDidMount() {
         const signOutButton = (
             <Button onPress={() => this.cleanAndExit()} title={getLocalizedString("account.signOutButton")} />
         );
