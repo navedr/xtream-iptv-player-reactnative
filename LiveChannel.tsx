@@ -7,6 +7,7 @@ import { play } from "react-native-vlc-player";
 import { ConfirmDialog } from "react-native-simple-dialogs";
 import getLocalizedString from "./utils/getLocalizedString";
 import { NavigationInjectedProps } from "react-navigation";
+import { utf8Decode } from "./common/utils";
 
 const colors = {
     deepSkyBlue: "#03A9F4",
@@ -32,21 +33,6 @@ const styles = StyleSheet.create({
 
 const base64 = require("base-64");
 
-function utf8Decode(utf8String) {
-    if (typeof utf8String !== "string") throw new TypeError("parameter ‘utf8String’ is not a string");
-
-    const unicodeString = utf8String
-        .replace(/[\u00e0-\u00ef][\u0080-\u00bf][\u0080-\u00bf]/g, function (c) {
-            const cc = ((c.charCodeAt(0) & 0x0f) << 12) | ((c.charCodeAt(1) & 0x3f) << 6) | (c.charCodeAt(2) & 0x3f);
-            return String.fromCharCode(cc);
-        })
-        .replace(/[\u00c0-\u00df][\u0080-\u00bf]/g, function (c) {
-            const cc = ((c.charCodeAt(0) & 0x1f) << 6) | (c.charCodeAt(1) & 0x3f);
-            return String.fromCharCode(cc);
-        });
-    return unicodeString;
-}
-
 class LiveChannel extends React.PureComponent<
     NavigationInjectedProps,
     {
@@ -66,8 +52,8 @@ class LiveChannel extends React.PureComponent<
     };
 
     async componentDidMount() {
-        const { url, username, password, ch } = this.props.navigation.state.params;
-        const epg = await getEPG(url, username, password, ch.stream_id);
+        const { url, username, password, item } = this.props.navigation.state.params;
+        const epg = await getEPG(url, username, password, item.stream_id);
         this.setState({
             loadingChannelEPG: false,
             epg,
@@ -75,13 +61,18 @@ class LiveChannel extends React.PureComponent<
     }
 
     viewNow() {
-        if (Platform.OS === "android" || Platform.OS === "ios") {
-            this.setState({ dialogVisible: true });
-        } else {
-            throw new Error("Platform not recognized: " + Platform.OS);
-        }
-
-        return this;
+        const { url, username, password, item } = this.props.navigation.state.params;
+        const uri = url + "/live/" + username + "/" + password + "/" + item.stream_id + ".ts";
+        this.props.navigation.navigate("VideoPlayer", {
+            uri,
+        });
+        // if (Platform.OS === "android" || Platform.OS === "ios") {
+        //     this.setState({ dialogVisible: true });
+        // } else {
+        //     throw new Error("Platform not recognized: " + Platform.OS);
+        // }
+        //
+        // return this;
     }
 
     renderEPG() {
@@ -130,27 +121,28 @@ class LiveChannel extends React.PureComponent<
     }
 
     _renderDialog() {
-        const { url, username, password, ch } = this.props.navigation.state.params;
+        const { url, username, password, item } = this.props.navigation.state.params;
         const message = getLocalizedString("liveChannel.message");
+        const uri = url + "/live/" + username + "/" + password + "/" + item.stream_id + ".ts";
+
         return (
             <ConfirmDialog
                 message={message}
                 negativeButton={{
                     onPress: () => {
                         this.setState({ dialogVisible: false });
-                        const uri = url + "/live/" + username + "/" + password + "/" + ch.stream_id + ".ts";
-                        // this.props.navigation.navigate("VideoPlayer", {
-                        //     uri,
-                        // });
-                        if (Platform.OS === "android") {
-                            play(uri);
-                        } else if (Platform.OS === "ios") {
-                            this.props.navigation.navigate("PlayeriOS", {
-                                uri
-                            });
-                        } else {
-                            throw new Error("Platform not recognized: " + Platform.OS);
-                        }
+                        this.props.navigation.navigate("VideoPlayer", {
+                            uri,
+                        });
+                        // if (Platform.OS === "android") {
+                        //     play(uri);
+                        // } else if (Platform.OS === "ios") {
+                        //     this.props.navigation.navigate("PlayeriOS", {
+                        //         uri,
+                        //     });
+                        // } else {
+                        //     throw new Error("Platform not recognized: " + Platform.OS);
+                        // }
                     },
                     title: getLocalizedString("liveChannel.no"),
                 }}
@@ -158,21 +150,10 @@ class LiveChannel extends React.PureComponent<
                 positiveButton={{
                     onPress: () => {
                         this.setState({ dialogVisible: false });
-
                         if (Platform.OS === "android") {
-                            Linking.openURL(url + "/live/" + username + "/" + password + "/" + ch.stream_id + ".ts");
+                            Linking.openURL(uri);
                         } else if (Platform.OS === "ios") {
-                            Linking.openURL(
-                                "vlc-x-callback://x-callback-url/stream?url=" +
-                                    url +
-                                    "/live/" +
-                                    username +
-                                    "/" +
-                                    password +
-                                    "/" +
-                                    ch.stream_id +
-                                    ".ts",
-                            );
+                            Linking.openURL("vlc-x-callback://x-callback-url/stream?url=" + uri);
                         } else {
                             throw new Error("Platform not recognized: " + Platform.OS);
                         }
@@ -186,13 +167,13 @@ class LiveChannel extends React.PureComponent<
     }
 
     _renderCard() {
-        const { url, username, password, ch } = this.props.navigation.state.params;
+        const { url, username, password, item } = this.props.navigation.state.params;
 
         return (
             <Card
-                image={ch.stream_icon && { uri: ch.stream_icon }}
+                image={item.stream_icon && { uri: item.stream_icon }}
                 imageProps={{ resizeMode: "contain" }}
-                title={ch.name}>
+                title={item.name}>
                 {this.renderEPG()}
                 <Button
                     backgroundColor={colors.deepSkyBlue}
@@ -203,7 +184,7 @@ class LiveChannel extends React.PureComponent<
                             url,
                             username,
                             password,
-                            ch,
+                            ch: item,
                         })
                     }
                     title={getLocalizedString("liveChannel.fullEPG")}

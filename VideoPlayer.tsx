@@ -1,6 +1,7 @@
 import { View, StyleSheet, Button } from "react-native";
 import * as React from "react";
 import { AVPlaybackStatus, Video } from "expo-av";
+import { NavigationInjectedProps } from "react-navigation";
 
 const styles = StyleSheet.create({
     container: {
@@ -20,31 +21,44 @@ const styles = StyleSheet.create({
     },
 });
 
-const VideoPlayer = React.memo<{ uri: string }>(({ uri }) => {
-    const video = React.useRef(null);
-    const [status, setStatus] = React.useState<AVPlaybackStatus & { isPlaying: boolean }>(null);
-    return (
-        <View style={styles.container}>
-            <Video
-                ref={video}
-                style={styles.video}
-                source={{
-                    uri,
-                }}
-                useNativeControls
-                resizeMode="contain"
-                isLooping
-                onPlaybackStatusUpdate={status => setStatus(() => status)}
-            />
-            <View style={styles.buttons}>
-                <Button
-                    title={status?.isPlaying ? "Pause" : "Play"}
-                    onPress={() => (status?.isPlaying ? video.current.pauseAsync() : video.current.playAsync())}
+const VideoPlayer = React.memo<NavigationInjectedProps>(
+    ({
+        navigation: {
+            state: { params },
+        },
+    }) => {
+        const { uri } = params;
+        const video = React.useRef(null);
+        const [status, setStatus] = React.useState<AVPlaybackStatus & { isPlaying: boolean }>(null);
+        React.useEffect(() => {
+            return () => {
+                video.current.stopAsync();
+            };
+        }, []);
+        return (
+            <View style={styles.container}>
+                <Video
+                    ref={video}
+                    style={styles.video}
+                    source={{
+                        uri,
+                    }}
+                    shouldPlay
+                    useNativeControls
+                    resizeMode="contain"
+                    isLooping
+                    // onPlaybackStatusUpdate={status => setStatus(() => status)}
                 />
+                <View style={styles.buttons}>
+                    <Button
+                        title={status?.isPlaying ? "Pause" : "Play"}
+                        onPress={() => (status?.isPlaying ? video.current.pauseAsync() : video.current.playAsync())}
+                    />
+                </View>
             </View>
-        </View>
-    );
-});
+        );
+    },
+);
 export default VideoPlayer;
 
 //

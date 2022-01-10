@@ -1,19 +1,12 @@
-import React, { Component } from "react";
+import * as React from "react";
 import { ActivityIndicator, Linking, Platform, StyleSheet, Text, ScrollView } from "react-native";
 import { Button, Card } from "react-native-elements";
-
 import getVODInfo from "./api/getVODInfo";
-
 import { play } from "react-native-vlc-player";
-
 import { ConfirmDialog } from "react-native-simple-dialogs";
-
 import getLocalizedString from "./utils/getLocalizedString";
-
-let loadingVODInfo = true;
-
-let activityIndicator = <ActivityIndicator animating hidesWhenStopped size="large" />;
-let activityIndicatorText = <Text>{getLocalizedString("VODChannel.activityIndicatorText")}</Text>;
+import { utf8Decode } from "./common/utils";
+import { NavigationInjectedProps } from "react-navigation";
 
 const colors = {
     deepSkyBlue: "#03A9F4",
@@ -37,240 +30,213 @@ const styles = StyleSheet.create({
     },
 });
 
-let Info = [];
-
-function utf8Decode(utf8String) {
-    if (typeof utf8String !== "string") throw new TypeError("parameter ‘utf8String’ is not a string");
-
-    const unicodeString = utf8String
-        .replace(/[\u00e0-\u00ef][\u0080-\u00bf][\u0080-\u00bf]/g, function (c) {
-            const cc = ((c.charCodeAt(0) & 0x0f) << 12) | ((c.charCodeAt(1) & 0x3f) << 6) | (c.charCodeAt(2) & 0x3f);
-            return String.fromCharCode(cc);
-        })
-        .replace(/[\u00c0-\u00df][\u0080-\u00bf]/g, function (c) {
-            const cc = ((c.charCodeAt(0) & 0x1f) << 6) | (c.charCodeAt(1) & 0x3f);
-            return String.fromCharCode(cc);
-        });
-    return unicodeString;
-}
-
-class VODChannel extends Component {
-    /* eslint-disable react/sort-comp */
-    state = {
+class VODChannel extends React.PureComponent<
+    NavigationInjectedProps,
+    {
+        dialogVisible: boolean;
+        loadingInfo: boolean;
+        info: {
+            info?: {
+                cast?: string;
+                plot?: string;
+                genre?: string;
+                rating?: string;
+                director?: string;
+                releasedate?: string;
+                duration?: string;
+            };
+        };
+    }
+> {
+    public state = {
         dialogVisible: false,
+        loadingInfo: true,
+        info: {
+            info: null,
+        },
     };
-    /* eslint-enable react/sort-comp */
 
-    async componentWillMount() {
-        const { url, username, password, vod } = this.props.navigation.state.params;
-
-        Info = await getVODInfo(url, username, password, vod.stream_id);
-
-        loadingVODInfo = false;
-
-        activityIndicator = null;
-        activityIndicatorText = null;
-
-        this.forceUpdate();
+    async componentDidMount() {
+        const { url, username, password, item } = this.props.navigation.state.params;
+        const info = await getVODInfo(url, username, password, item.stream_id);
+        this.setState({
+            loadingInfo: false,
+            info,
+        });
     }
 
-    render() {
-        if (loadingVODInfo) {
-            return (
-                <ScrollView contentContainerStyle={styles.activityContainer}>
-                    {activityIndicator}
-                    {activityIndicatorText}
-                </ScrollView>
-            );
-        }
+    viewNow() {
+        const { url, username, password, item } = this.props.navigation.state.params;
+        const uri = url + "/movie/" + username + "/" + password + "/" + item.stream_id + "." + item.container_extension;
+        this.props.navigation.navigate("VideoPlayer", {
+            uri,
+        });
+        // if (Platform.OS === "android" || Platform.OS === "ios") {
+        //     this.setState({ dialogVisible: true });
+        // } else {
+        //     throw new Error("Platform not recognized: " + Platform.OS);
+        // }
+        // return this;
+    }
 
-        const { url, username, password, vod } = this.props.navigation.state.params;
-
-        const card = vod.stream_icon ? (
-            <Card image={{ uri: vod.stream_icon }} imageProps={{ resizeMode: "contain" }} title={vod.name}>
-                {Info.info.plot ? (
+    renderInfo() {
+        const { info } = this.state;
+        const { item } = this.props.navigation.state.params;
+        return item.stream_icon ? (
+            <Card image={{ uri: item.stream_icon }} imageProps={{ resizeMode: "contain" }} title={item.name}>
+                {info.info.plot ? (
                     <Text>
-                        {getLocalizedString("vodChannel.plot")} {utf8Decode(Info.info.plot) + "\r\n"}
+                        {getLocalizedString("vodChannel.plot")} {utf8Decode(info.info.plot) + "\r\n"}
                     </Text>
                 ) : null}
-                {Info.info.cast ? (
+                {info.info.cast ? (
                     <Text>
-                        {getLocalizedString("vodChannel.cast")} {utf8Decode(Info.info.cast) + "\r\n"}
+                        {getLocalizedString("vodChannel.cast")} {utf8Decode(info.info.cast) + "\r\n"}
                     </Text>
                 ) : null}
-                {Info.info.genre ? (
+                {info.info.genre ? (
                     <Text>
-                        {getLocalizedString("vodChannel.genre")} {utf8Decode(Info.info.genre) + "\r\n"}
+                        {getLocalizedString("vodChannel.genre")} {utf8Decode(info.info.genre) + "\r\n"}
                     </Text>
                 ) : null}
-                {Info.info.rating ? (
+                {info.info.rating ? (
                     <Text>
-                        {getLocalizedString("vodChannel.rating")} {utf8Decode(Info.info.rating)} / 10 {"\r\n"}
+                        {getLocalizedString("vodChannel.rating")} {utf8Decode(info.info.rating)} / 10 {"\r\n"}
                     </Text>
                 ) : null}
-                {Info.info.director ? (
+                {info.info.director ? (
                     <Text>
-                        {getLocalizedString("vodChannel.director")} {utf8Decode(Info.info.director) + "\r\n"}
+                        {getLocalizedString("vodChannel.director")} {utf8Decode(info.info.director) + "\r\n"}
                     </Text>
                 ) : null}
-                {Info.info.releasedate ? (
+                {info.info.releasedate ? (
                     <Text>
-                        {getLocalizedString("vodChannel.releasedate")} {utf8Decode(Info.info.releasedate) + "\r\n"}
+                        {getLocalizedString("vodChannel.releasedate")} {utf8Decode(info.info.releasedate) + "\r\n"}
                     </Text>
                 ) : null}
-                {Info.info.duration ? (
+                {info.info.duration ? (
                     <Text>
-                        {getLocalizedString("vodChannel.duration")} {utf8Decode(Info.info.duration) + "\r\n"}
+                        {getLocalizedString("vodChannel.duration")} {utf8Decode(info.info.duration) + "\r\n"}
                     </Text>
                 ) : null}
                 <Button
                     backgroundColor={colors.deepSkyBlue}
                     buttonStyle={styles.button}
                     icon={{ name: "eye", type: "font-awesome" }}
-                    onPress={() => this.viewNow(url, username, password, vod)}
+                    onPress={() => this.viewNow()}
                     title={getLocalizedString("vodChannel.viewNow")}
                 />
             </Card>
         ) : (
-            <Card title={vod.name}>
-                {Info.info.plot ? (
+            <Card title={item.name}>
+                {info.info.plot ? (
                     <Text>
-                        {getLocalizedString("vodChannel.plot")} {utf8Decode(Info.info.plot) + "\r\n"}
+                        {getLocalizedString("vodChannel.plot")} {utf8Decode(info.info.plot) + "\r\n"}
                     </Text>
                 ) : null}
-                {Info.info.cast ? (
+                {info.info.cast ? (
                     <Text>
-                        {getLocalizedString("vodChannel.cast")} {utf8Decode(Info.info.cast) + "\r\n"}
+                        {getLocalizedString("vodChannel.cast")} {utf8Decode(info.info.cast) + "\r\n"}
                     </Text>
                 ) : null}
-                {Info.info.genre ? (
+                {info.info.genre ? (
                     <Text>
-                        {getLocalizedString("vodChannel.genre")} {utf8Decode(Info.info.genre) + "\r\n"}
+                        {getLocalizedString("vodChannel.genre")} {utf8Decode(info.info.genre) + "\r\n"}
                     </Text>
                 ) : null}
-                {Info.info.rating ? (
+                {info.info.rating ? (
                     <Text>
-                        {getLocalizedString("vodChannel.rating")} {utf8Decode(Info.info.rating)} / 10 {"\r\n"}
+                        {getLocalizedString("vodChannel.rating")} {utf8Decode(info.info.rating)} / 10 {"\r\n"}
                     </Text>
                 ) : null}
-                {Info.info.director ? (
+                {info.info.director ? (
                     <Text>
-                        {getLocalizedString("vodChannel.director")} {utf8Decode(Info.info.director) + "\r\n"}
+                        {getLocalizedString("vodChannel.director")} {utf8Decode(info.info.director) + "\r\n"}
                     </Text>
                 ) : null}
-                {Info.info.releasedate ? (
+                {info.info.releasedate ? (
                     <Text>
-                        {getLocalizedString("vodChannel.releasedate")} {utf8Decode(Info.info.releasedate) + "\r\n"}
+                        {getLocalizedString("vodChannel.releasedate")} {utf8Decode(info.info.releasedate) + "\r\n"}
                     </Text>
                 ) : null}
-                {Info.info.duration ? (
+                {info.info.duration ? (
                     <Text>
-                        {getLocalizedString("vodChannel.duration")} {utf8Decode(Info.info.duration) + "\r\n"}
+                        {getLocalizedString("vodChannel.duration")} {utf8Decode(info.info.duration) + "\r\n"}
                     </Text>
                 ) : null}
                 <Button
                     backgroundColor={colors.deepSkyBlue}
                     buttonStyle={styles.button}
                     icon={{ name: "eye", type: "font-awesome" }}
-                    onPress={() => this.viewNow(url, username, password, vod)}
+                    onPress={() => this.viewNow()}
                     title={getLocalizedString("vodChannel.viewNow")}
                 />
             </Card>
         );
+    }
 
-        if (this.state.dialogVisible) {
-            const message = getLocalizedString("vodChannel.message");
+    renderDialog() {
+        const { url, username, password, item } = this.props.navigation.state.params;
+        const message = getLocalizedString("vodChannel.message");
+        const uri = url + "/movie/" + username + "/" + password + "/" + item.stream_id + "." + item.container_extension;
+        return (
+            <ConfirmDialog
+                message={message}
+                negativeButton={{
+                    onPress: () => {
+                        this.setState({ dialogVisible: false });
+                        // this.props.navigation.navigate("VideoPlayer", {
+                        //     uri,
+                        // });
+                        if (Platform.OS === "android") {
+                            play(uri);
+                        } else if (Platform.OS === "ios") {
+                            this.props.navigation.navigate("PlayeriOS", {
+                                uri,
+                            });
+                        } else {
+                            throw new Error("Platform not recognized: " + Platform.OS);
+                        }
+                    },
+                    title: getLocalizedString("vodChannel.no"),
+                }}
+                onTouchOutside={() => this.setState({ dialogVisible: false })}
+                positiveButton={{
+                    onPress: () => {
+                        this.setState({ dialogVisible: false });
+
+                        if (Platform.OS === "android") {
+                            Linking.openURL(uri);
+                        } else if (Platform.OS === "ios") {
+                            Linking.openURL("vlc-x-callback://x-callback-url/stream?url=" + uri);
+                        } else {
+                            throw new Error("Platform not recognized: " + Platform.OS);
+                        }
+                    },
+                    title: getLocalizedString("vodChannel.yes"),
+                }}
+                title={getLocalizedString("vodChannel.title")}
+                visible={this.state.dialogVisible}
+            />
+        );
+    }
+
+    render() {
+        const { loadingInfo } = this.state;
+        if (loadingInfo) {
             return (
-                <ConfirmDialog
-                    message={message}
-                    negativeButton={{
-                        onPress: () => {
-                            this.setState({ dialogVisible: false });
-
-                            if (Platform.OS === "android") {
-                                play(
-                                    url +
-                                        "/movie/" +
-                                        username +
-                                        "/" +
-                                        password +
-                                        "/" +
-                                        vod.stream_id +
-                                        "." +
-                                        vod.container_extension,
-                                );
-                            } else if (Platform.OS === "ios") {
-                                this.props.navigation.navigate("PlayeriOS", {
-                                    uri:
-                                        url +
-                                        "/movie/" +
-                                        username +
-                                        "/" +
-                                        password +
-                                        "/" +
-                                        vod.stream_id +
-                                        "." +
-                                        vod.container_extension,
-                                });
-                            } else {
-                                throw new Error("Platform not recognized: " + Platform.OS);
-                            }
-                        },
-                        title: getLocalizedString("vodChannel.no"),
-                    }}
-                    onTouchOutside={() => this.setState({ dialogVisible: false })}
-                    positiveButton={{
-                        onPress: () => {
-                            this.setState({ dialogVisible: false });
-
-                            if (Platform.OS === "android") {
-                                Linking.openURL(
-                                    url +
-                                        "/movie/" +
-                                        username +
-                                        "/" +
-                                        password +
-                                        "/" +
-                                        vod.stream_id +
-                                        "." +
-                                        vod.container_extension,
-                                );
-                            } else if (Platform.OS === "ios") {
-                                Linking.openURL(
-                                    "vlc-x-callback://x-callback-url/stream?url=" +
-                                        url +
-                                        "/movie/" +
-                                        username +
-                                        "/" +
-                                        password +
-                                        "/" +
-                                        vod.stream_id +
-                                        "." +
-                                        vod.container_extension,
-                                );
-                            } else {
-                                throw new Error("Platform not recognized: " + Platform.OS);
-                            }
-                        },
-                        title: getLocalizedString("vodChannel.yes"),
-                    }}
-                    title={getLocalizedString("vodChannel.title")}
-                    visible={this.state.dialogVisible}
-                />
+                <ScrollView contentContainerStyle={styles.activityContainer}>
+                    <ActivityIndicator animating hidesWhenStopped size="large" />
+                    <Text>{getLocalizedString("VODChannel.activityIndicatorText")}</Text>
+                </ScrollView>
             );
         }
 
-        return <ScrollView>{card}</ScrollView>;
-    }
-
-    viewNow(url, username, password, vod) {
-        if (Platform.OS === "android" || Platform.OS === "ios") {
-            this.setState({ dialogVisible: true });
-        } else {
-            throw new Error("Platform not recognized: " + Platform.OS);
+        if (this.state.dialogVisible) {
+            return this.renderDialog();
         }
 
-        return this;
+        return <ScrollView>{this.renderInfo()}</ScrollView>;
     }
 }
 

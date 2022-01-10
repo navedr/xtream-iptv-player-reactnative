@@ -84,6 +84,7 @@ export default class Login extends React.PureComponent<
     /* eslint-enable react/no-did-mount-set-state */
 
     async checkFields() {
+
         const { url, username, password } = this.state;
 
         if (!url) {

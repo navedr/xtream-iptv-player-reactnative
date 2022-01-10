@@ -1,6 +1,8 @@
-import React, { Component } from "react";
-import { StyleSheet, ScrollView } from "react-native";
+import * as React from "react";
+import { StyleSheet, ScrollView, Text } from "react-native";
 import { ListItem } from "react-native-elements";
+import { NavigationInjectedProps } from "react-navigation";
+import { getSeries } from "./api/getSeries";
 
 const styles = StyleSheet.create({
     listContainer: {
@@ -8,54 +10,45 @@ const styles = StyleSheet.create({
     },
 });
 
-class SeriesEpisodePickerScreen extends Component {
-    render() {
-        const { url, username, password, serie } = this.props.navigation.state.params;
+const SeriesEpisodePickerScreen: React.FC<NavigationInjectedProps> = React.memo(
+    ({
+        navigation: {
+            state: { params },
+            navigate,
+        },
+    }) => {
+        const { url, username, password, item: series } = params;
 
         const listItems = [];
+        getSeries(url, username, password, series.category_id).then(episodes => {
+          console.log(episodes)
+            episodes.forEach(episode => {
+                if (!episode.title.length) {
+                    return;
+                }
 
-        serie.episodes.forEach(s => {
-            let serieItem = null;
-
-            if (!s.title.length) {
-                return;
-            }
-
-            serieItem =
-                s.info.movie_image.startsWith("http") || s.info.movie_image.startsWith("https") ? (
+                listItems.push(
                     <ListItem
-                        key={s.id}
-                        avatar={{ uri: s.info.movie_image }}
+                        key={series.num}
+                        // avatar={
+                        //     episode.info.movie_image.startsWith("http") ||
+                        //     (episode.info.movie_image.startsWith("https") && { uri: s.info.movie_image })
+                        // }
                         containerStyle={{ borderBottomWidth: 0 }}
                         onPress={() =>
-                            this.props.navigation.navigate("SeriesEpisodeViewer", {
+                            navigate("SeriesEpisodeViewer", {
                                 url,
                                 username,
                                 password,
-                                s,
+                                episode,
                             })
                         }
-                        roundAvatar
-                        title={s.title}
-                    />
-                ) : (
-                    <ListItem
-                        key={s.id}
-                        containerStyle={{ borderBottomWidth: 0 }}
-                        onPress={() =>
-                            this.props.navigation.navigate("SeriesEpisodeViewer", {
-                                url,
-                                username,
-                                password,
-                                s,
-                            })
-                        }
-                        roundAvatar
-                        title={s.title}
-                    />
+                        hasTVPreferredFocus
+                        tvParallaxProperties>
+                        <Text>{episode.name}</Text>
+                    </ListItem>,
                 );
-
-            listItems.push(serieItem);
+            });
         });
 
         return (
@@ -63,7 +56,7 @@ class SeriesEpisodePickerScreen extends Component {
                 <ScrollView>{listItems}</ScrollView>
             </ScrollView>
         );
-    }
-}
+    },
+);
 
 export default SeriesEpisodePickerScreen;

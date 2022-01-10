@@ -39,9 +39,9 @@ const NavigationStack = createStackNavigator({
     PlayeriOS: {
         screen: PlayeriOS,
     },
-    // VideoPlayer: {
-    //     screen: VideoPlayer,
-    // },
+    VideoPlayer: {
+        screen: VideoPlayer,
+    },
     VODs: {
         screen: VODScreen,
     },

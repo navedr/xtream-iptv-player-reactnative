@@ -1,35 +1,22 @@
-import React, { Component } from "react";
-import { ActivityIndicator, Alert, AsyncStorage, Button, StyleSheet, Text, ScrollView, View } from "react-native";
+import * as React from "react";
+import { ActivityIndicator, Alert, Button, ScrollView, StyleSheet, Text, View } from "react-native";
+import AsyncStorage from "@react-native-community/async-storage";
 import { ListItem, SearchBar } from "react-native-elements";
 
 import Toast, { DURATION } from "react-native-easy-toast";
 
 import getCategories from "./api/getCategories";
-import { getSeriesCategories, getSeries } from "./api/getSeries";
+import { getSeries, getSeriesCategories } from "./api/getSeries";
 
 import getLocalizedString from "./utils/getLocalizedString";
 
 import SegmentedButton from "./utils/SegmentedButton";
-
-let categoriesAndSeries = [];
-
-let categoriesLeft = 0;
-let seriesFetched = 0;
-let episodesFetched = 0;
-
-let loadingSeriesFromCategories = true;
-
-let menuItems = [];
-let listItems = [];
-let filteredList = [];
-let weAreSearching = false;
-
-let activityIndicator = <ActivityIndicator animating hidesWhenStopped size="large" />;
-let activityIndicatorText = (
-    <Text>
-        {getLocalizedString("series.activityIndicatorText", null, [categoriesLeft, seriesFetched, episodesFetched])}
-    </Text>
-);
+import { NavigationInjectedProps } from "react-navigation";
+import { sortBy } from "lodash";
+import { isLetterOrNumber, sleep } from "./common/utils";
+import getVODs from "./api/getVODs";
+import Categories from "./Categories";
+import { Type } from "./constants";
 
 const colors = {
     black: "#fff",
@@ -61,49 +48,73 @@ const styles = StyleSheet.create({
     },
 });
 
-function isLetterOrNumber(c) {
-    if (/^\d/.test(c)) {
-        return true;
+class OldSeriesScreen extends React.PureComponent<
+    NavigationInjectedProps,
+    {
+        categoriesAndSeries: any[];
+        categoriesLeft: number;
+        seriesFetched: number;
+        episodesFetched: number;
+        loadingSeriesFromCategories: boolean;
+        menuItems: any[];
+        listItems: any[];
+        filteredList: any[];
+        weAreSearching: boolean;
     }
+> {
+    public state = {
+        categoriesAndSeries: [],
+        categoriesLeft: 0,
+        seriesFetched: 0,
+        episodesFetched: 0,
+        loadingSeriesFromCategories: true,
+        menuItems: [],
+        listItems: [],
+        filteredList: [],
+        weAreSearching: false,
+    };
+    private search;
+    private toast;
 
-    return c.toLowerCase() !== c.toUpperCase();
-}
-
-function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-class SeriesScreen extends Component {
-    async componentWillMount() {
-        this.clearOnEmpty();
+    async componentDidMount() {
+        let categoriesAndSeries;
+        this.setState({
+            loadingSeriesFromCategories: true,
+        });
+        let menuItems = [];
 
         const seriesArray = await AsyncStorage.getItem("@IPTVPlayer:seriesArray");
         if (seriesArray && seriesArray.length > 0) {
             categoriesAndSeries = JSON.parse(seriesArray);
-
-            categoriesAndSeries.forEach(c => {
-                menuItems.push({ text: c.category_name, data: [] });
-
-                c.Series.forEach(serie => {
-                    menuItems[menuItems.length - 1].data.push(serie);
-                });
-            });
-
-            menuItems.sort(function (a, b) {
-                return a.text > b.text;
-            });
-
-            if (menuItems.length) {
-                this.onCategoryButton(null, 0);
-            }
-
-            loadingSeriesFromCategories = false;
-
-            this.forceUpdate();
-
-            return;
+        } else {
+            categoriesAndSeries = await this.getCategoriesFromServer();
         }
 
+        categoriesAndSeries.forEach(c => {
+            menuItems.push({ text: c.category_name, data: [] });
+            c.Series.forEach(serie => {
+                menuItems[menuItems.length - 1].data.push(serie);
+            });
+        });
+
+        menuItems = sortBy(menuItems, "text");
+
+        this.setState(
+            {
+                loadingSeriesFromCategories: false,
+                menuItems,
+                categoriesAndSeries,
+            },
+            () => {
+                if (menuItems.length) {
+                    this.selectCategory(null, 0);
+                }
+            },
+        );
+    }
+
+    private async getCategoriesFromServer() {
+        let categoriesAndSeries = [];
         const { url, username, password, buttonIndex } = this.props.navigation.state.params;
 
         await getCategories(url, username, password, buttonIndex).then(r => {
@@ -114,9 +125,12 @@ class SeriesScreen extends Component {
             /* eslint-enable no-return-assign */
         });
 
-        categoriesLeft = categoriesAndSeries.length;
-
-        /* eslint-disable no-restricted-syntax, guard-for-in, no-await-in-loop */
+        let seriesFetched = 0;
+        let episodesFetched = 0;
+        let categoriesLeft = categoriesAndSeries.length;
+        this.setState({
+            categoriesLeft,
+        });
         for (const category in categoriesAndSeries) {
             await sleep(1500);
             categoriesAndSeries[category].Series = await getSeriesCategories(
@@ -125,69 +139,47 @@ class SeriesScreen extends Component {
                 password,
                 categoriesAndSeries[category].category_id,
             );
-
             categoriesLeft--;
-
             if (categoriesAndSeries[category].Series.length > 0) {
                 categoriesAndSeries[category].Series.forEach(s => {
                     s.episodes = [];
                 });
             }
-
             seriesFetched += categoriesAndSeries[category].Series.length;
-
-            activityIndicatorText = (
-                <Text>
-                    {getLocalizedString("series.activityIndicatorText", null, [
-                        categoriesLeft,
-                        seriesFetched,
-                        episodesFetched,
-                    ])}
-                </Text>
-            );
-
-            this.forceUpdate();
+            this.setState({
+                categoriesLeft,
+                seriesFetched,
+            });
         }
 
         for (const category in categoriesAndSeries) {
             if (!categoriesAndSeries[category].Series.length) {
                 categoriesAndSeries[category] = null;
             } else {
-                for (const serie in categoriesAndSeries[category].Series) {
-                    categoriesAndSeries[category].Series[serie].episodesRaw = await getSeries(
+                for (const series in categoriesAndSeries[category].Series) {
+                    categoriesAndSeries[category].Series[series].episodesRaw = await getSeries(
                         url,
                         username,
                         password,
-                        categoriesAndSeries[category].Series[serie].series_id,
+                        categoriesAndSeries[category].Series[series].series_id,
                     );
-                    categoriesAndSeries[category].Series[serie].episodesRaw =
-                        categoriesAndSeries[category].Series[serie].episodesRaw.episodes;
-                    categoriesAndSeries[category].Series[serie].episodes = [];
+                    categoriesAndSeries[category].Series[series].episodesRaw =
+                        categoriesAndSeries[category].Series[series].episodesRaw.episodes;
+                    categoriesAndSeries[category].Series[series].episodes = [];
 
-                    /* eslint-disable no-loop-func */
-                    for (const key in categoriesAndSeries[category].Series[serie].episodesRaw) {
-                        const value = categoriesAndSeries[category].Series[serie].episodesRaw[key];
-                        value.map(v => categoriesAndSeries[category].Series[serie].episodes.push(v));
+                    for (const key in categoriesAndSeries[category].Series[series].episodesRaw) {
+                        const value = categoriesAndSeries[category].Series[series].episodesRaw[key];
+                        value.map(v => categoriesAndSeries[category].Series[series].episodes.push(v));
                     }
 
-                    episodesFetched += categoriesAndSeries[category].Series[serie].episodes.length;
+                    episodesFetched += categoriesAndSeries[category].Series[series].episodes.length;
 
-                    activityIndicatorText = (
-                        <Text>
-                            {getLocalizedString("series.activityIndicatorText", null, [
-                                categoriesLeft,
-                                seriesFetched,
-                                episodesFetched,
-                            ])}
-                        </Text>
-                    );
-
-                    this.forceUpdate();
+                    this.setState({
+                        episodesFetched,
+                    });
                 }
             }
         }
-
-        /* eslint-disable no-restricted-syntax, guard-for-in, no-await-in-loop */
 
         categoriesAndSeries = categoriesAndSeries.filter(x => x);
 
@@ -196,37 +188,121 @@ class SeriesScreen extends Component {
         } catch (error) {
             throw new Error(error);
         }
+        return categoriesAndSeries;
+    }
 
-        categoriesAndSeries.forEach(c => {
-            menuItems.push({ text: c.category_name, data: [] });
+    selectCategory(btn, index) {
+        const { menuItems } = this.state;
+        const { url, username, password } = this.props.navigation.state.params;
 
-            c.Series.forEach(serie => {
-                menuItems[menuItems.length - 1].data.push(serie);
-            });
+        this.setState({
+            weAreSearching: false,
+            filteredList: [],
         });
+        let listItems = [];
 
-        menuItems.sort(function (a, b) {
-            return a.text > b.text;
-        });
-
-        if (menuItems.length) {
-            this.onCategoryButton(null, 0);
+        if (this.search && this.search.clearText) {
+            this.search.clearText();
         }
 
-        loadingSeriesFromCategories = false;
+        menuItems[index].data.forEach(series => {
+            let item = null;
 
-        activityIndicator = null;
-        activityIndicatorText = null;
+            if (!series.name.length) {
+                return;
+            }
 
-        this.forceUpdate();
+            if (series.name.charAt(0) !== "(" && !isLetterOrNumber(series.name.charAt(0))) {
+                item = (
+                    <Button
+                        key={series.num}
+                        disabled
+                        onPress={() => {}}
+                        // style={styles.listItem}
+                        title={series.name}
+                    />
+                );
+            } else {
+                item = (
+                    <ListItem
+                        key={series.num}
+                        // avatar={
+                        //     series.cover.startsWith("http") ||
+                        //     (series.cover.startsWith("https") && { uri: series.cover })
+                        // }
+                        containerStyle={{ borderBottomWidth: 0 }}
+                        onPress={() =>
+                            this.props.navigation.navigate("SeriesEpisodePicker", {
+                                url,
+                                username,
+                                password,
+                                series,
+                            })
+                        }
+                        hasTVPreferredFocus
+                        tvParallaxProperties>
+                        <Text>{series.name}</Text>
+                    </ListItem>
+                );
+            }
+
+            listItems.push(item);
+        });
+
+        this.setState({
+            listItems,
+        });
+    }
+
+    searchForSeries(searchText) {
+        const { listItems } = this.state;
+        const text = searchText.toLowerCase();
+
+        if (!text) {
+            this.setState({
+                weAreSearching: false,
+            });
+            return;
+        }
+
+        let filteredList = listItems.filter(item => {
+            return item.props.title.toLowerCase().match(text);
+        });
+
+        filteredList = sortBy(filteredList, "title");
+
+        this.setState({
+            filteredList,
+            weAreSearching: true,
+        });
     }
 
     render() {
+        const {
+            loadingSeriesFromCategories,
+            categoriesAndSeries,
+            menuItems,
+            weAreSearching,
+            listItems,
+            filteredList,
+            categoriesLeft,
+            seriesFetched,
+            episodesFetched,
+        } = this.state;
+
         if (loadingSeriesFromCategories) {
             return (
                 <ScrollView contentContainerStyle={styles.activityContainer}>
-                    {activityIndicator}
-                    {activityIndicatorText}
+                    {<ActivityIndicator animating hidesWhenStopped size="large" />}
+                    {
+                        <Text>
+                            {getLocalizedString("series.activityIndicatorText", null, [
+                                categoriesLeft,
+                                seriesFetched,
+                                episodesFetched,
+                            ])}
+                        </Text>
+                    }
                 </ScrollView>
             );
         }
@@ -249,7 +325,7 @@ class SeriesScreen extends Component {
             <ScrollView contentContainerStyle={styles.listContainer}>
                 <SegmentedButton
                     items={menuItems}
-                    onSegmentBtnPress={(btn, index) => this.onCategoryButton(btn, index)}
+                    onSegmentBtnPress={(btn, index) => this.selectCategory(btn, index)}
                 />
                 <View>
                     <SearchBar
@@ -270,138 +346,12 @@ class SeriesScreen extends Component {
             </ScrollView>
         );
     }
-
-    onCategoryButton(btn, index) {
-        const { url, username, password } = this.props.navigation.state.params;
-
-        weAreSearching = false;
-        filteredList = [];
-        if (this.search) {
-            this.search.clearText();
-        }
-
-        listItems = [];
-
-        menuItems[index].data.forEach(serie => {
-            let serieItem = null;
-
-            if (!serie.name.length) {
-                return;
-            }
-
-            if (serie.name.charAt(0) !== "(" && !isLetterOrNumber(serie.name.charAt(0))) {
-                serieItem = (
-                    <Button key={serie.num} disabled onPress={() => {}} style={styles.listItem} title={serie.name} />
-                );
-
-                listItems.push(serieItem);
-
-                return;
-            }
-
-            serieItem =
-                serie.cover.startsWith("http") || serie.cover.startsWith("https") ? (
-                    <ListItem
-                        key={serie.num}
-                        avatar={{ uri: serie.cover }}
-                        containerStyle={{ borderBottomWidth: 0 }}
-                        onPress={() =>
-                            this.props.navigation.navigate("SeriesEpisodePicker", {
-                                url,
-                                username,
-                                password,
-                                serie,
-                            })
-                        }
-                        roundAvatar
-                        title={serie.name}
-                    />
-                ) : (
-                    <ListItem
-                        key={serie.num}
-                        containerStyle={{ borderBottomWidth: 0 }}
-                        onPress={() =>
-                            this.props.navigation.navigate("SeriesEpisodePicker", {
-                                url,
-                                username,
-                                password,
-                                serie,
-                            })
-                        }
-                        roundAvatar
-                        title={serie.name}
-                    />
-                );
-
-            listItems.push(serieItem);
-        });
-
-        this.forceUpdate();
-    }
-
-    clearOnEmpty() {
-        categoriesAndSeries = [];
-
-        categoriesLeft = 0;
-        seriesFetched = 0;
-        episodesFetched = 0;
-
-        loadingSeriesFromCategories = true;
-
-        menuItems = [];
-        listItems = [];
-        filteredList = [];
-        weAreSearching = false;
-
-        activityIndicator = <ActivityIndicator animating hidesWhenStopped size="large" />;
-        activityIndicatorText = (
-            <Text>
-                {getLocalizedString("series.activityIndicatorText", null, [
-                    categoriesLeft,
-                    seriesFetched,
-                    episodesFetched,
-                ])}
-            </Text>
-        );
-
-        return this;
-    }
-
-    searchForSeries(getText) {
-        filteredList = [];
-
-        const text = getText.toLowerCase();
-
-        if (!text || text === "") {
-            weAreSearching = false;
-
-            this.forceUpdate();
-
-            return;
-        }
-
-        filteredList = listItems.filter(item => {
-            return item.props.title.toLowerCase().match(text);
-        });
-
-        if (!filteredList.length) {
-            weAreSearching = false;
-
-            this.toast.show(getLocalizedString("series.filterSeriesNotFound"), DURATION.LENGTH_LONG);
-
-            this.forceUpdate();
-
-            return;
-        }
-
-        weAreSearching = true;
-
-        filteredList.sort(function (a, b) {
-            return a.title > b.title;
-        });
-
-        this.forceUpdate();
-    }
 }
+
+const SeriesScreen: React.FC<NavigationInjectedProps> = React.memo(props => {
+    const getItems = (url, username, password, categories, index) =>
+        getSeriesCategories(url, username, password, categories[index].category_id);
+    return <Categories type={Type.Series} getItems={getItems} {...props} itemRoute={"SeriesEpisodePicker"} />;
+});
 
 export default SeriesScreen;

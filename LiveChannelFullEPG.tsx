@@ -1,17 +1,15 @@
-import React, { Component } from "react";
-import { ActivityIndicator, StyleSheet, Text, ScrollView } from "react-native";
+import * as React from "react";
+import { ActivityIndicator, ScrollView, StyleSheet, Text } from "react-native";
 import { ListItem } from "react-native-elements";
-
 import getFullEPG from "./api/getFullEPG";
 
 import timeConverter from "./utils/timeConverter";
 
 import getLocalizedString from "./utils/getLocalizedString";
+import { NavigationInjectedProps } from "react-navigation";
+import { utf8Decode } from "./common/utils";
 
-let loadingChannelEPG = true;
-
-let activityIndicator = <ActivityIndicator animating hidesWhenStopped size="large" />;
-let activityIndicatorText = <Text>{getLocalizedString("liveChannel.activityIndicatorText")}</Text>;
+const base64 = require("base-64");
 
 const styles = StyleSheet.create({
     activityContainer: {
@@ -21,73 +19,61 @@ const styles = StyleSheet.create({
     },
 });
 
-let EPG = [];
-
-const base64 = require("base-64");
-
-function utf8Decode(utf8String) {
-    if (typeof utf8String !== "string") throw new TypeError("parameter ‘utf8String’ is not a string");
-
-    const unicodeString = utf8String
-        .replace(/[\u00e0-\u00ef][\u0080-\u00bf][\u0080-\u00bf]/g, function (c) {
-            const cc = ((c.charCodeAt(0) & 0x0f) << 12) | ((c.charCodeAt(1) & 0x3f) << 6) | (c.charCodeAt(2) & 0x3f);
-            return String.fromCharCode(cc);
-        })
-        .replace(/[\u00c0-\u00df][\u0080-\u00bf]/g, function (c) {
-            const cc = ((c.charCodeAt(0) & 0x1f) << 6) | (c.charCodeAt(1) & 0x3f);
-            return String.fromCharCode(cc);
-        });
-    return unicodeString;
-}
-
-class LiveChannelFullEPG extends Component {
-    async componentWillMount() {
+class LiveChannelFullEPG extends React.PureComponent<
+    NavigationInjectedProps,
+    {
+        loadingChannelEPG: boolean;
+        epg: {
+            epg_listings: any[];
+        };
+    }
+> {
+    public state = {
+        loadingChannelEPG: true,
+        epg: {
+            epg_listings: [],
+        },
+    };
+    async componentDidMount() {
         const { url, username, password, ch } = this.props.navigation.state.params;
-
-        EPG = await getFullEPG(url, username, password, ch.stream_id);
-
-        loadingChannelEPG = false;
-
-        activityIndicator = null;
-        activityIndicatorText = null;
-
-        this.forceUpdate();
+        const epg = await getFullEPG(url, username, password, ch.stream_id);
+        this.setState({
+            loadingChannelEPG: false,
+            epg,
+        });
     }
 
     render() {
+        const { epg, loadingChannelEPG } = this.state;
         if (loadingChannelEPG) {
             return (
                 <ScrollView contentContainerStyle={styles.activityContainer}>
-                    {activityIndicator}
-                    {activityIndicatorText}
+                    {<ActivityIndicator animating hidesWhenStopped size="large" />}
+                    {<Text>{getLocalizedString("liveChannel.activityIndicatorText")}</Text>}
                 </ScrollView>
             );
         }
 
         const fullEPG = [];
 
-        EPG.epg_listings.forEach(e => {
+        epg.epg_listings.forEach(e => {
             let title = utf8Decode(base64.decode(e.title));
             title += "\r\n";
             title += utf8Decode(base64.decode(e.description));
 
-            let subtitle = timeConverter(e.start_timestamp, true);
+            let subtitle = timeConverter(e.start_timestamp);
             subtitle += "\r\n";
-            subtitle += timeConverter(e.stop_timestamp, true);
+            subtitle += timeConverter(e.stop_timestamp);
 
             if (e.start_timestamp < Math.floor(Date.now() / 1000)) {
                 return;
             }
 
             fullEPG.push(
-                <ListItem
-                    key={e.id}
-                    hideChevron
-                    subtitle={subtitle}
-                    subtitleNumberOfLines={2}
-                    title={title}
-                    titleNumberOfLines={2}
-                />,
+                <ListItem key={e.id} hasTVPreferredFocus tvParallaxProperties>
+                    <Text>{title}</Text>
+                    <Text>{subtitle}</Text>
+                </ListItem>,
             );
         });
 
