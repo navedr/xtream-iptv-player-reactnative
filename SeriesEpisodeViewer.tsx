@@ -68,7 +68,7 @@ class SeriesEpisodePicker extends React.PureComponent<
                         image={{ uri: episode.info.movie_image }}
                         imageProps={{ resizeMode: "contain" }}
                         title={episode.title}>
-                        {episode.info.name.length ? <Text>Name:{episode.info.name}</Text> : null}
+                        {episode.info.name?.length ? <Text>Name:{episode.info.name}</Text> : null}
                         {episode.info.plot.length ? <Text>Plot: {episode.info.plot}</Text> : null}
                         {episode.info.releasedate.length ? <Text>Release Date: {episode.info.releasedate}</Text> : null}
                         {episode.info.rating.length ? <Text>Rating: {episode.info.rating}</Text> : null}

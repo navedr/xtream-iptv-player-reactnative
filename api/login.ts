@@ -5,19 +5,19 @@ function login(url, username, password) {
     return fetch(buildUrl(url + '/player_api.php', { username, password }), { method: 'GET' })
     .then((response) => {
       if (!response.ok) {
-        throw new Error(`Response status ${response.status}`);
+        console.log(`Response status ${response.status}`);
       }
 
       const contentType = response.headers.get('content-type');
 
       if (!contentType || contentType.indexOf('application/json') === -1) {
-        throw new Error('Response is not json');
+        console.log('Response is not json');
       }
 
       return response.json();
     });
   } catch (error) {
-    throw new Error(error);
+    console.log(error);
   }
 }
 

@@ -1,5 +1,5 @@
 import * as React from "react";
-import { ActivityIndicator, Button, StyleSheet, Text, ScrollView, View } from "react-native";
+import { ActivityIndicator, Button, ScrollView, StyleSheet, Text, View } from "react-native";
 import AsyncStorage from "@react-native-community/async-storage";
 import { ListItem, SearchBar } from "react-native-elements";
 import Toast from "react-native-easy-toast";
@@ -7,7 +7,7 @@ import getCategories from "./api/getCategories";
 import SegmentedButton from "./utils/SegmentedButton";
 import { sortBy } from "lodash";
 import { NavigationInjectedProps } from "react-navigation";
-import { isLetterOrNumber, sleep } from "./common/utils";
+import { isLetterOrNumber } from "./common/utils";
 import { Type } from "./constants";
 import getItems from "./api/getItems";
 
@@ -71,8 +71,9 @@ class Categories extends React.PureComponent<
     private toast;
 
     private get storageName() {
+        const { id } = this.props.navigation.state.params;
         const { type } = this.props;
-        return `@IPTVPlayer:${Type[type]}Categories`;
+        return `@IPTVPlayer:Playlist${id}${Type[type]}Categories`;
     }
 
     async componentDidMount() {
@@ -101,43 +102,6 @@ class Categories extends React.PureComponent<
                 }
             },
         );
-    }
-
-    private async getCategoriesFromServer() {
-        let categories = [];
-        const { type } = this.props;
-        const { url, username, password } = this.props.navigation.state.params;
-
-        await getCategories(url, username, password, type).then(r => {
-            categories.push(...r);
-        });
-
-        categories = categories.filter(x => x);
-        categories = sortBy(categories, "category_name");
-
-        await this.storeCategories(categories);
-        return categories;
-    }
-
-    private async storeCategories(categories) {
-        try {
-            await AsyncStorage.setItem(this.storageName, JSON.stringify(categories));
-        } catch (error) {
-            throw new Error(error);
-        }
-        this.setState({
-            categories,
-        });
-    }
-
-    private async getItemsFromServer(index: number) {
-        const { type } = this.props;
-        const { categories } = this.state;
-        const { url, username, password } = this.props.navigation.state.params;
-        const items = await getItems(url, username, password, categories[index].category_id, type);
-        categories[index].items = items;
-        await this.storeCategories(categories);
-        return items;
     }
 
     async selectCategory(btn, index) {
@@ -269,6 +233,43 @@ class Categories extends React.PureComponent<
                 />
             </ScrollView>
         );
+    }
+
+    private async getCategoriesFromServer() {
+        let categories = [];
+        const { type } = this.props;
+        const { url, username, password } = this.props.navigation.state.params;
+
+        await getCategories(url, username, password, type).then(r => {
+            categories.push(...r);
+        });
+
+        categories = categories.filter(x => x);
+        categories = sortBy(categories, "category_name");
+
+        await this.storeCategories(categories);
+        return categories;
+    }
+
+    private async storeCategories(categories) {
+        try {
+            await AsyncStorage.setItem(this.storageName, JSON.stringify(categories));
+        } catch (error) {
+            throw new Error(error);
+        }
+        this.setState({
+            categories,
+        });
+    }
+
+    private async getItemsFromServer(index: number) {
+        const { type } = this.props;
+        const { categories } = this.state;
+        const { url, username, password } = this.props.navigation.state.params;
+        const items = await getItems(url, username, password, categories[index].category_id, type);
+        categories[index].items = items;
+        await this.storeCategories(categories);
+        return items;
     }
 }
 

@@ -1,6 +1,6 @@
 import * as React from "react";
-import { Alert, StyleSheet, ScrollView, TextInput } from "react-native";
-import { Button } from "react-native-elements";
+import { Alert, StyleSheet, ScrollView } from "react-native";
+import { Button, TextInput } from "react-native-paper";
 
 import Toast, { DURATION } from "react-native-easy-toast";
 
@@ -11,12 +11,8 @@ import { useAccountContext } from "./providers/AccountProvider";
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        alignItems: "center",
     },
-    textInputStyle: {
-        width: 200,
-        height: 45,
-    },
+    textInputStyle: {},
     image: {
         height: 125,
         width: 125,
@@ -38,8 +34,8 @@ function handleFirstConnectivityChange(connectionInfo) {
     // NetInfo.removeEventListener("connectionChange", handleFirstConnectivityChange);
 }
 
-const Login = React.memo<NavigationInjectedProps>(({ navigation: { navigate } }) => {
-    const toast = React.useRef();
+const AddPlaylist = React.memo<NavigationInjectedProps>(({ navigation: { navigate } }) => {
+    const toast = React.useRef<any>();
     const { add } = useAccountContext();
     const [id, setId] = React.useState<string>();
     const [url, setUrl] = React.useState<string>();
@@ -82,9 +78,11 @@ const Login = React.memo<NavigationInjectedProps>(({ navigation: { navigate } })
             <TextInput
                 autoCapitalize="none"
                 autoCorrect={false}
+                autoFocus
                 onChangeText={name => setId(name)}
                 placeholder={"Name"}
                 style={styles.textInputStyle}
+                mode={"flat"}
             />
             <TextInput
                 autoCapitalize="none"
@@ -108,15 +106,12 @@ const Login = React.memo<NavigationInjectedProps>(({ navigation: { navigate } })
                 secureTextEntry
                 style={styles.textInputStyle}
             />
-            <Button
-                icon={{ name: "key", type: "font-awesome" }}
-                large
-                onPress={() => checkFields()}
-                title={getLocalizedString("login.loginButton")}
-            />
+            <Button icon={"plus"} mode={"contained"} onPress={() => checkFields()} style={{ marginTop: 10 }}>
+                Add
+            </Button>
             <Toast ref={toast} />
         </ScrollView>
     );
 });
 
-export default Login;
+export default AddPlaylist;
