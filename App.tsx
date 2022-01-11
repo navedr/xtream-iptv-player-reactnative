@@ -13,13 +13,16 @@ import SeriesScreen from "./Series";
 import SeriesEpisodePickerScreen from "./SeriesEpisodePicker";
 import SeriesEpisodeViewerScreen from "./SeriesEpisodeViewer";
 import VideoPlayer from "./VideoPlayer";
+import * as React from "react";
+import { AccountContextProvider } from "./providers/AccountProvider";
+import Home from "./Home";
 
 const NavigationStack = createStackNavigator({
+    Home: {
+        screen: Home,
+    },
     Login: {
         screen: LoginScreen,
-        navigationOptions: {
-            headerLeft: () => null,
-        },
     },
     Account: {
         screen: AccountScreen,
@@ -61,4 +64,12 @@ const NavigationStack = createStackNavigator({
 
 const Container = createAppContainer(NavigationStack);
 
-export default Container;
+const App = React.memo(() => {
+    return (
+        <AccountContextProvider>
+            <Container />
+        </AccountContextProvider>
+    );
+});
+
+export default App;

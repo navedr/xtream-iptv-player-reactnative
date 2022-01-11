@@ -1,8 +1,6 @@
 import * as React from "react";
-import { Linking, Platform, StyleSheet, ScrollView, Text } from "react-native";
+import { ScrollView, StyleSheet, Text } from "react-native";
 import { Button, Card } from "react-native-elements";
-import { play } from "react-native-vlc-player";
-import { ConfirmDialog } from "react-native-simple-dialogs";
 import getLocalizedString from "./utils/getLocalizedString";
 import { NavigationInjectedProps } from "react-navigation";
 
@@ -31,7 +29,6 @@ const styles = StyleSheet.create({
 class SeriesEpisodePicker extends React.PureComponent<
     NavigationInjectedProps,
     {
-        dialogVisible: boolean;
         loadingInfo: boolean;
         info: {
             info?: {
@@ -47,76 +44,22 @@ class SeriesEpisodePicker extends React.PureComponent<
     }
 > {
     public state = {
-        dialogVisible: false,
         loadingInfo: true,
         info: {
             info: null,
         },
     };
 
-    renderDialog() {
-        const { url, username, password, episode } = this.props.navigation.state.params;
-        const message = getLocalizedString("liveChannel.message");
-        const uri = url + "/series/" + username + "/" + password + "/" + episode.id + "." + episode.container_extension;
-
-        return (
-            <ConfirmDialog
-                message={message}
-                negativeButton={{
-                    onPress: () => {
-                        this.setState({ dialogVisible: false });
-                        // this.props.navigation.navigate("VideoPlayer", {
-                        //     uri,
-                        // });
-                        if (Platform.OS === "android") {
-                            play(uri);
-                        } else if (Platform.OS === "ios") {
-                            this.props.navigation.navigate("PlayeriOS", {
-                                uri,
-                            });
-                        } else {
-                            throw new Error("Platform not recognized: " + Platform.OS);
-                        }
-                    },
-                    title: getLocalizedString("liveChannel.no"),
-                }}
-                onTouchOutside={() => this.setState({ dialogVisible: false })}
-                positiveButton={{
-                    onPress: () => {
-                        this.setState({ dialogVisible: false });
-
-                        if (Platform.OS === "android") {
-                            Linking.openURL(uri);
-                        } else if (Platform.OS === "ios") {
-                            Linking.openURL("vlc-x-callback://x-callback-url/stream?url=" + uri);
-                        } else {
-                            throw new Error("Platform not recognized: " + Platform.OS);
-                        }
-                    },
-                    title: getLocalizedString("liveChannel.yes"),
-                }}
-                title={getLocalizedString("liveChannel.title")}
-                visible={this.state.dialogVisible}
-            />
-        );
-    }
-
     viewNow() {
-        if (Platform.OS === "android" || Platform.OS === "ios") {
-            this.setState({ dialogVisible: true });
-        } else {
-            throw new Error("Platform not recognized: " + Platform.OS);
-        }
-
-        return this;
+        const { url, username, password, episode } = this.props.navigation.state.params;
+        const uri = url + "/series/" + username + "/" + password + "/" + episode.id + "." + episode.container_extension;
+        this.props.navigation.navigate("VideoPlayer", {
+            uri,
+        });
     }
 
     render() {
         const { episode } = this.props.navigation.state.params;
-
-        if (this.state.dialogVisible) {
-            return this.renderDialog();
-        }
 
         return (
             <ScrollView>

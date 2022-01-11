@@ -1,5 +1,5 @@
 import * as React from "react";
-import { ActivityIndicator, Alert, Button, StyleSheet, Text, ScrollView, View } from "react-native";
+import { ActivityIndicator, Button, StyleSheet, Text, ScrollView, View } from "react-native";
 import AsyncStorage from "@react-native-community/async-storage";
 import { ListItem, SearchBar } from "react-native-elements";
 import Toast from "react-native-easy-toast";
@@ -9,6 +9,7 @@ import { sortBy } from "lodash";
 import { NavigationInjectedProps } from "react-navigation";
 import { isLetterOrNumber, sleep } from "./common/utils";
 import { Type } from "./constants";
+import getItems from "./api/getItems";
 
 const colors = {
     black: "#fff",
@@ -42,7 +43,6 @@ const styles = StyleSheet.create({
 
 export interface ICategoriesProps {
     type: Type;
-    getItems: (url, username, password, categories, index) => any;
     itemRoute: string;
 }
 
@@ -50,6 +50,7 @@ class Categories extends React.PureComponent<
     NavigationInjectedProps & ICategoriesProps,
     {
         categories: any[];
+        loading: boolean;
         menuItems: { text: string; items: any[] }[];
         listItems: any[];
         selectedCategoryItems: any[];
@@ -59,6 +60,7 @@ class Categories extends React.PureComponent<
 > {
     public state = {
         categories: [],
+        loading: true,
         menuItems: [],
         listItems: [],
         selectedCategoryItems: [],
@@ -129,10 +131,10 @@ class Categories extends React.PureComponent<
     }
 
     private async getItemsFromServer(index: number) {
-        const { getItems } = this.props;
+        const { type } = this.props;
         const { categories } = this.state;
         const { url, username, password } = this.props.navigation.state.params;
-        const items = await getItems(url, username, password, categories, index);
+        const items = await getItems(url, username, password, categories[index].category_id, type);
         categories[index].items = items;
         await this.storeCategories(categories);
         return items;
@@ -141,6 +143,9 @@ class Categories extends React.PureComponent<
     async selectCategory(btn, index) {
         const { categories } = this.state;
         const { itemRoute } = this.props;
+        this.setState({
+            loading: true,
+        });
         let selectedCategoryItems = categories[index].items;
 
         if (!selectedCategoryItems) {
@@ -202,6 +207,7 @@ class Categories extends React.PureComponent<
 
         this.setState({
             listItems,
+            loading: false,
         });
     }
 
@@ -229,21 +235,7 @@ class Categories extends React.PureComponent<
     }
 
     render() {
-        const { menuItems, weAreSearching, listItems, filteredList } = this.state;
-
-        // if (!categories.length) {
-        //     Alert.alert(
-        //         getLocalizedString("live.noCategoriesError"),
-        //         getLocalizedString("live.noCategoriesErrorDesc"),
-        //         [
-        //             {
-        //                 text: "OK",
-        //                 onPress: () => this.props.navigation.navigate("Account", this.props.navigation.state.params),
-        //             },
-        //         ],
-        //         { cancelable: false },
-        //     );
-        // }
+        const { menuItems, weAreSearching, listItems, filteredList, loading } = this.state;
 
         return (
             <ScrollView contentContainerStyle={styles.listContainer}>
@@ -263,7 +255,13 @@ class Categories extends React.PureComponent<
                         round
                     />
                 </View>
-                <ScrollView>{weAreSearching ? filteredList : listItems}</ScrollView>
+                {loading ? (
+                    <ScrollView contentContainerStyle={styles.activityContainer}>
+                        <ActivityIndicator animating hidesWhenStopped size="large" />
+                    </ScrollView>
+                ) : (
+                    <ScrollView>{weAreSearching ? filteredList : listItems}</ScrollView>
+                )}
                 <Toast
                     ref={c => {
                         this.toast = c;

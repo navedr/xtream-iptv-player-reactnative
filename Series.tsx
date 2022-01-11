@@ -3,7 +3,7 @@ import { ActivityIndicator, Alert, Button, ScrollView, StyleSheet, Text, View } 
 import AsyncStorage from "@react-native-community/async-storage";
 import { ListItem, SearchBar } from "react-native-elements";
 
-import Toast, { DURATION } from "react-native-easy-toast";
+import Toast from "react-native-easy-toast";
 
 import getCategories from "./api/getCategories";
 import { getSeries, getSeriesCategories } from "./api/getSeries";
@@ -14,7 +14,6 @@ import SegmentedButton from "./utils/SegmentedButton";
 import { NavigationInjectedProps } from "react-navigation";
 import { sortBy } from "lodash";
 import { isLetterOrNumber, sleep } from "./common/utils";
-import getVODs from "./api/getVODs";
 import Categories from "./Categories";
 import { Type } from "./constants";
 
@@ -349,9 +348,7 @@ class OldSeriesScreen extends React.PureComponent<
 }
 
 const SeriesScreen: React.FC<NavigationInjectedProps> = React.memo(props => {
-    const getItems = (url, username, password, categories, index) =>
-        getSeriesCategories(url, username, password, categories[index].category_id);
-    return <Categories type={Type.Series} getItems={getItems} {...props} itemRoute={"SeriesEpisodePicker"} />;
+    return <Categories type={Type.Series} {...props} itemRoute={"SeriesEpisodePicker"} />;
 });
 
 export default SeriesScreen;

@@ -1,13 +1,14 @@
-import React, { Component } from "react";
-import { AppState, StyleSheet, View, Dimensions, TouchableOpacity } from "react-native";
-// import VLCPlayer from 'react-native-vlcplayer';
+import * as React from "react";
+import { AppState, StyleSheet, View, Dimensions, TouchableOpacity, AppStateStatus } from "react-native";
+// import VLCPlayer from "react-native-vlcplayer";
 import * as Progress from "react-native-progress";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { Bars } from "react-native-loader";
 import Orientation from "react-native-orientation";
+import { NavigationInjectedProps } from "react-navigation";
 
-const playerDefaultHeight = Dimensions.get("window").width;
-const playerDefaultWidth = Dimensions.get("window").height;
+const playerDefaultHeight = Dimensions.get("window").height;
+const playerDefaultWidth = Dimensions.get("window").width;
 
 const styles = StyleSheet.create({
     container: {
@@ -30,23 +31,27 @@ const styles = StyleSheet.create({
     },
 });
 
-export default class PlayeriOS extends Component {
-    constructor(props) {
-        super(props);
-        this.state = {
-            appState: AppState.currentState,
-            progress: 0,
-            paused: true,
-            playButtonColor: "rgba(255,255,255,1)",
-            loadingColor: "rgba(255,255,255,0)",
-            buttonSize: 70,
-            progressWidth: playerDefaultWidth,
-        };
-
-        if (this.props.buttonSize) {
-            this.state.buttonSize = this.props.buttonSize;
-        }
+export default class PlayeriOS extends React.PureComponent<
+    NavigationInjectedProps,
+    {
+        appState: AppStateStatus;
+        progress: number;
+        paused: boolean;
+        playButtonColor: string;
+        loadingColor: string;
+        buttonSize: number;
+        progressWidth: number;
     }
+> {
+    public state = {
+        appState: AppState.currentState,
+        progress: 0,
+        paused: true,
+        playButtonColor: "rgba(255,255,255,1)",
+        loadingColor: "rgba(255,255,255,0)",
+        buttonSize: 70,
+        progressWidth: playerDefaultWidth,
+    };
 
     componentDidMount() {
         AppState.addEventListener("change", this._handleAppStateChange);
@@ -68,27 +73,6 @@ export default class PlayeriOS extends Component {
 
         this.setState({ appState: nextAppState });
     };
-
-    render() {
-        const defaultControlsView = this.defaultControlsView();
-
-        return (
-            <View style={styles.container}>
-                {/*<VLCPlayer*/}
-                {/*	ref='vlcplayer'*/}
-                {/*	onBuffering={this.onBuffering.bind(this)}*/}
-                {/*	onEnded={this.onEnded.bind(this)}*/}
-                {/*	onPaused={this.onPaused.bind(this)}*/}
-                {/*	onPlaying={this.onPlaying.bind(this)}*/}
-                {/*	onProgress={this.onProgress.bind(this)}*/}
-                {/*	onStopped={this.onEnded.bind(this)}*/}
-                {/*	paused={this.state.paused}*/}
-                {/*	source={{ uri: this.props.navigation.state.params.uri, initOptions: ['--codec=avcodec'] }}*/}
-                {/*	style={[styles.vlcplayer]} />*/}
-                {/*{defaultControlsView}*/}
-            </View>
-        );
-    }
 
     pause() {
         if (!this.state.paused) {
@@ -128,15 +112,15 @@ export default class PlayeriOS extends Component {
                         size={this.state.buttonSize}
                     />
                 </TouchableOpacity>
-                <Progress.Bar
-                    ref="progress"
-                    borderRadius={0}
-                    borderWidth={0}
-                    color="rgba(255,0,0,1)"
-                    height={3}
-                    progress={this.state.progress}
-                    width={this.state.progressWidth}
-                />
+                {/*<Progress.Bar*/}
+                {/*    // ref="progress"*/}
+                {/*    borderRadius={0}*/}
+                {/*    borderWidth={0}*/}
+                {/*    color="rgba(255,0,0,1)"*/}
+                {/*    height={3}*/}
+                {/*    progress={this.state.progress}*/}
+                {/*    width={this.state.progressWidth}*/}
+                {/*/>*/}
             </View>
         );
     }
@@ -149,5 +133,27 @@ export default class PlayeriOS extends Component {
     onEnded(event) {
         this.setState({ progress: 1 });
         this.setState({ playButtonColor: "rgba(255,255,255,1)" });
+    }
+
+    render() {
+        const defaultControlsView = this.defaultControlsView();
+
+        return (
+            <View style={styles.container}>
+                {/*<VLCPlayer*/}
+                {/*    ref="vlcplayer"*/}
+                {/*    onBuffering={this.onBuffering.bind(this)}*/}
+                {/*    onEnded={this.onEnded.bind(this)}*/}
+                {/*    onPaused={this.onPaused.bind(this)}*/}
+                {/*    onPlaying={this.onPlaying.bind(this)}*/}
+                {/*    onProgress={this.onProgress.bind(this)}*/}
+                {/*    onStopped={this.onEnded.bind(this)}*/}
+                {/*    paused={this.state.paused}*/}
+                {/*    source={{ uri: this.props.navigation.state.params.uri, initOptions: ["--codec=avcodec"] }}*/}
+                {/*    style={[styles.vlcplayer]}*/}
+                {/*/>*/}
+                {defaultControlsView}
+            </View>
+        );
     }
 }

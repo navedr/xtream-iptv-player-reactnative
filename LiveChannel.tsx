@@ -3,8 +3,6 @@ import { ActivityIndicator, Linking, Platform, StyleSheet, Text, ScrollView } fr
 import { Button, Card, Divider } from "react-native-elements";
 import getEPG from "./api/getEPG";
 import timeConverter from "./utils/timeConverter";
-import { play } from "react-native-vlc-player";
-import { ConfirmDialog } from "react-native-simple-dialogs";
 import getLocalizedString from "./utils/getLocalizedString";
 import { NavigationInjectedProps } from "react-navigation";
 import { utf8Decode } from "./common/utils";
@@ -36,7 +34,6 @@ const base64 = require("base-64");
 class LiveChannel extends React.PureComponent<
     NavigationInjectedProps,
     {
-        dialogVisible: boolean;
         loadingChannelEPG: boolean;
         epg: {
             epg_listings: any[];
@@ -44,7 +41,6 @@ class LiveChannel extends React.PureComponent<
     }
 > {
     public state = {
-        dialogVisible: false,
         loadingChannelEPG: true,
         epg: {
             epg_listings: [],
@@ -66,13 +62,6 @@ class LiveChannel extends React.PureComponent<
         this.props.navigation.navigate("VideoPlayer", {
             uri,
         });
-        // if (Platform.OS === "android" || Platform.OS === "ios") {
-        //     this.setState({ dialogVisible: true });
-        // } else {
-        //     throw new Error("Platform not recognized: " + Platform.OS);
-        // }
-        //
-        // return this;
     }
 
     renderEPG() {
@@ -120,52 +109,6 @@ class LiveChannel extends React.PureComponent<
         );
     }
 
-    _renderDialog() {
-        const { url, username, password, item } = this.props.navigation.state.params;
-        const message = getLocalizedString("liveChannel.message");
-        const uri = url + "/live/" + username + "/" + password + "/" + item.stream_id + ".ts";
-
-        return (
-            <ConfirmDialog
-                message={message}
-                negativeButton={{
-                    onPress: () => {
-                        this.setState({ dialogVisible: false });
-                        this.props.navigation.navigate("VideoPlayer", {
-                            uri,
-                        });
-                        // if (Platform.OS === "android") {
-                        //     play(uri);
-                        // } else if (Platform.OS === "ios") {
-                        //     this.props.navigation.navigate("PlayeriOS", {
-                        //         uri,
-                        //     });
-                        // } else {
-                        //     throw new Error("Platform not recognized: " + Platform.OS);
-                        // }
-                    },
-                    title: getLocalizedString("liveChannel.no"),
-                }}
-                onTouchOutside={() => this.setState({ dialogVisible: false })}
-                positiveButton={{
-                    onPress: () => {
-                        this.setState({ dialogVisible: false });
-                        if (Platform.OS === "android") {
-                            Linking.openURL(uri);
-                        } else if (Platform.OS === "ios") {
-                            Linking.openURL("vlc-x-callback://x-callback-url/stream?url=" + uri);
-                        } else {
-                            throw new Error("Platform not recognized: " + Platform.OS);
-                        }
-                    },
-                    title: getLocalizedString("liveChannel.yes"),
-                }}
-                title={getLocalizedString("liveChannel.title")}
-                visible={this.state.dialogVisible}
-            />
-        );
-    }
-
     _renderCard() {
         const { url, username, password, item } = this.props.navigation.state.params;
 
@@ -202,7 +145,7 @@ class LiveChannel extends React.PureComponent<
     }
 
     render() {
-        const { loadingChannelEPG, dialogVisible } = this.state;
+        const { loadingChannelEPG } = this.state;
 
         if (loadingChannelEPG) {
             return (
@@ -211,10 +154,6 @@ class LiveChannel extends React.PureComponent<
                     <Text>{getLocalizedString("liveChannel.activityIndicatorText")}</Text>
                 </ScrollView>
             );
-        }
-
-        if (dialogVisible) {
-            return this._renderDialog();
         }
 
         return <ScrollView>{this._renderCard()}</ScrollView>;

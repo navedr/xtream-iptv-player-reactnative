@@ -1,20 +1,17 @@
 import * as React from "react";
-import { Alert, Image, StyleSheet, TextInput, ScrollView } from "react-native";
-import AsyncStorage from "@react-native-community/async-storage";
+import { Alert, StyleSheet, ScrollView, TextInput } from "react-native";
 import { Button } from "react-native-elements";
 
 import Toast, { DURATION } from "react-native-easy-toast";
 
-import login from "./api/login";
-
 import getLocalizedString from "./utils/getLocalizedString";
 import { NavigationInjectedProps } from "react-navigation";
+import { useAccountContext } from "./providers/AccountProvider";
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
         alignItems: "center",
-        justifyContent: "center",
     },
     textInputStyle: {
         width: 200,
@@ -41,143 +38,85 @@ function handleFirstConnectivityChange(connectionInfo) {
     // NetInfo.removeEventListener("connectionChange", handleFirstConnectivityChange);
 }
 
-let tmpUrl = null;
-
-export default class Login extends React.PureComponent<
-    NavigationInjectedProps,
-    {
-        url: string;
-        username: string;
-        password: string;
-    }
-> {
-    public state = {
-        url: "",
-        username: "",
-        password: "",
-    };
-    private toast;
-    async componentDidMount() {
-        try {
-            const url = await AsyncStorage.getItem("@IPTVPlayer:url");
-            if (url !== null) {
-                this.setState({ url });
-                tmpUrl = url;
-            }
-
-            const username = await AsyncStorage.getItem("@IPTVPlayer:username");
-            if (username !== null) {
-                this.setState({ username });
-            }
-
-            const password = await AsyncStorage.getItem("@IPTVPlayer:password");
-            if (password !== null) {
-                this.setState({ password });
-            }
-        } catch (error) {
-            throw new Error(error);
+const Login = React.memo<NavigationInjectedProps>(({ navigation: { navigate } }) => {
+    const toast = React.useRef();
+    const { add } = useAccountContext();
+    const [id, setId] = React.useState<string>();
+    const [url, setUrl] = React.useState<string>();
+    const [username, setUserName] = React.useState<string>();
+    const [password, setPassword] = React.useState<string>();
+    const checkFields = async () => {
+        if (!id) {
+            toast.current.show("Please enter a name", DURATION.LENGTH_SHORT);
+            return;
         }
-
-        // NetInfo.addEventListener("connectionChange", handleFirstConnectivityChange);
-    }
-
-    /* eslint-enable react/no-did-mount-set-state */
-
-    async checkFields() {
-
-        const { url, username, password } = this.state;
-
         if (!url) {
-            this.toast.show(getLocalizedString("login.toastEmptyURL"), DURATION.LENGTH_SHORT);
+            toast.current.show(getLocalizedString("login.toastEmptyURL"), DURATION.LENGTH_SHORT);
             return;
         }
         if (!url.startsWith("http") || url.startsWith("https")) {
-            this.toast.show(getLocalizedString("login.toastInvalidURL"), DURATION.LENGTH_SHORT);
+            toast.current.show(getLocalizedString("login.toastInvalidURL"), DURATION.LENGTH_SHORT);
             return;
         }
 
         if (!username) {
-            this.toast.show(getLocalizedString("login.toastUsername"), DURATION.LENGTH_SHORT);
+            toast.current.show(getLocalizedString("login.toastUsername"), DURATION.LENGTH_SHORT);
             return;
         }
 
         if (!password) {
-            this.toast.show(getLocalizedString("login.toastPassword"), DURATION.LENGTH_SHORT);
+            toast.current.show(getLocalizedString("login.toastPassword"), DURATION.LENGTH_SHORT);
             return;
         }
 
-        try {
-            if (tmpUrl !== url) {
-                await AsyncStorage.removeItem("@IPTVPlayer:LiveArray");
-                await AsyncStorage.removeItem("@IPTVPlayer:VODArray");
-            }
-
-            await AsyncStorage.setItem("@IPTVPlayer:url", url);
-            await AsyncStorage.setItem("@IPTVPlayer:username", username);
-            await AsyncStorage.setItem("@IPTVPlayer:password", password);
-        } catch (error) {
-            throw new Error(error);
-        }
-
-        const loginReply = await login(url, username, password);
-
-        if (loginReply.user_info.auth === 1) {
-            const { navigate } = this.props.navigation;
-
-            navigate("Account", {
-                url,
-                username,
-                password,
-                user_info: loginReply.user_info,
-            });
+        const response = await add(id, url, username, password);
+        if (response) {
+            toast.current.show(response, DURATION.LENGTH_SHORT);
         } else {
-            this.toast.show(getLocalizedString("login.toastError"), DURATION.LENGTH_SHORT);
+            navigate("Home", {});
         }
-    }
+    };
 
-    render() {
-        const { url, username, password } = this.state;
+    return (
+        <ScrollView contentContainerStyle={styles.container}>
+            <TextInput
+                autoCapitalize="none"
+                autoCorrect={false}
+                onChangeText={name => setId(name)}
+                placeholder={"Name"}
+                style={styles.textInputStyle}
+            />
+            <TextInput
+                autoCapitalize="none"
+                autoCorrect={false}
+                onChangeText={urlText => setUrl(urlText)}
+                placeholder={getLocalizedString("login.placeholderURL")}
+                style={styles.textInputStyle}
+            />
+            <TextInput
+                autoCapitalize="none"
+                autoCorrect={false}
+                onChangeText={usernameText => setUserName(usernameText)}
+                placeholder={getLocalizedString("login.placeholderUsername")}
+                style={styles.textInputStyle}
+            />
+            <TextInput
+                autoCapitalize="none"
+                autoCorrect={false}
+                onChangeText={passwordText => setPassword(passwordText)}
+                placeholder={getLocalizedString("login.placeholderPassword")}
+                secureTextEntry
+                style={styles.textInputStyle}
+            />
+            <Button
+                icon={{ name: "key", type: "font-awesome" }}
+                large
+                onPress={() => checkFields()}
+                title={getLocalizedString("login.loginButton")}
+            />
+            <Toast ref={toast} />
+        </ScrollView>
+    );
+});
 
-        return (
-            <ScrollView contentContainerStyle={styles.container}>
-                <Image resizeMode="contain" source={require("./common/z_1_250.png")} style={styles.image} />
-                <TextInput
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    onChangeText={urlText => this.setState({ url: urlText })}
-                    placeholder={getLocalizedString("login.placeholderURL")}
-                    style={styles.textInputStyle}
-                    value={url}
-                />
-                <TextInput
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    onChangeText={usernameText => this.setState({ username: usernameText })}
-                    placeholder={getLocalizedString("login.placeholderUsername")}
-                    style={styles.textInputStyle}
-                    value={username}
-                />
-                <TextInput
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    onChangeText={passwordText => this.setState({ password: passwordText })}
-                    placeholder={getLocalizedString("login.placeholderPassword")}
-                    secureTextEntry
-                    style={styles.textInputStyle}
-                    value={password}
-                />
-                <Button
-                    icon={{ name: "key", type: "font-awesome" }}
-                    large
-                    onPress={() => this.checkFields()}
-                    title={getLocalizedString("login.loginButton")}
-                />
-                <Toast
-                    ref={c => {
-                        this.toast = c;
-                    }}
-                />
-            </ScrollView>
-        );
-    }
-}
+export default Login;
