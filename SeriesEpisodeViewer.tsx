@@ -26,7 +26,7 @@ const styles = StyleSheet.create({
     },
 });
 
-class SeriesEpisodePicker extends React.PureComponent<
+class SeriesEpisodeViewer extends React.PureComponent<
     NavigationInjectedProps,
     {
         loadingInfo: boolean;
@@ -100,4 +100,4 @@ class SeriesEpisodePicker extends React.PureComponent<
     }
 }
 
-export default SeriesEpisodePicker;
+export default SeriesEpisodeViewer;

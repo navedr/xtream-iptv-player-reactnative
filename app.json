@@ -2,12 +2,12 @@
     "expo": {
         "sdkVersion": "42.0.0",
         "ios": {
-            "bundleIdentifier": "com.innovationzunlimited.iptvplayer",
+            "bundleIdentifier": "com.innovationzunlimited.magiciptv",
             "supportsTablet": true,
             "userInterfaceStyle": "automatic"
         },
         "android": {
-            "package": "com.innovationzunlimited.iptvplayer"
+            "package": "com.innovationzunlimited.magiciptv"
         },
         "name": "Magic IPTV",
         "slug": "magic-iptv",

@@ -1,12 +1,12 @@
 import * as React from "react";
 import { AVPlaybackStatus, Video } from "expo-av";
-import { Button, StyleSheet, View } from "react-native";
+import { StyleSheet, View, Text, ActivityIndicator } from "react-native";
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        alignItems: "center",
         justifyContent: "center",
-        backgroundColor: "#ecf0f1",
     },
     video: {
         alignSelf: "center",
@@ -20,34 +20,45 @@ const styles = StyleSheet.create({
     },
 });
 
-const ExpoVideoPlayer: React.FC<{ uri: string }> = React.memo(({ uri }) => {
+const ExpoVideoPlayer: React.FC<{ uri: string; onError: (error) => void }> = React.memo(({ uri, onError }) => {
     const video = React.useRef(null);
-    const [status, setStatus] = React.useState<AVPlaybackStatus & { isPlaying: boolean }>(null);
+    const [loading, setLoading] = React.useState<boolean>(false);
+
     React.useEffect(() => {
+        console.log(uri);
         return () => {
-            video.current.stopAsync();
+            video.current.stopAsync().catch(e => console.log("error stopping video", e));
         };
     }, []);
+
+    const onReadyForDisplay = event => {
+        setLoading(false);
+        video.current.playAsync().catch(e => console.log("error playing video", e));
+    };
     return (
         <View style={styles.container}>
+            {loading && (
+                <>
+                    <ActivityIndicator animating hidesWhenStopped size="large" />
+                </>
+            )}
             <Video
                 ref={video}
                 style={styles.video}
                 source={{
                     uri,
                 }}
-                shouldPlay
                 useNativeControls
                 resizeMode="contain"
-                isLooping
-                // onPlaybackStatusUpdate={status => setStatus(() => status)}
+                // onLoad={status => console.log("onLoad", status)}
+                onLoadStart={() => setLoading(true)}
+                onReadyForDisplay={onReadyForDisplay}
+                onError={error => {
+                    console.log("onError", error);
+                    onError(error);
+                }}
+                // onPlaybackStatusUpdate={status => console.log("onPlaybackStatusUpdate", status)}
             />
-            <View style={styles.buttons}>
-                <Button
-                    title={status?.isPlaying ? "Pause" : "Play"}
-                    onPress={() => (status?.isPlaying ? video.current.pauseAsync() : video.current.playAsync())}
-                />
-            </View>
         </View>
     );
 });

@@ -3,3 +3,11 @@ export enum Type {
   Movies,
   Series
 }
+
+export enum VideoPlayerType {
+  VLC,
+  VLCExternal,
+  ExpoAV,
+  Native,
+  ReactNative,
+}

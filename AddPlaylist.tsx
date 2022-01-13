@@ -37,12 +37,12 @@ function handleFirstConnectivityChange(connectionInfo) {
 const AddPlaylist = React.memo<NavigationInjectedProps>(({ navigation: { navigate } }) => {
     const toast = React.useRef<any>();
     const { add } = useAccountContext();
-    const [id, setId] = React.useState<string>();
+    const [name, setName] = React.useState<string>();
     const [url, setUrl] = React.useState<string>();
     const [username, setUserName] = React.useState<string>();
     const [password, setPassword] = React.useState<string>();
     const checkFields = async () => {
-        if (!id) {
+        if (!name) {
             toast.current.show("Please enter a name", DURATION.LENGTH_SHORT);
             return;
         }
@@ -65,7 +65,7 @@ const AddPlaylist = React.memo<NavigationInjectedProps>(({ navigation: { navigat
             return;
         }
 
-        const response = await add(id, url, username, password);
+        const response = await add(name, url, username, password);
         if (response) {
             toast.current.show(response, DURATION.LENGTH_SHORT);
         } else {
@@ -79,7 +79,7 @@ const AddPlaylist = React.memo<NavigationInjectedProps>(({ navigation: { navigat
                 autoCapitalize="none"
                 autoCorrect={false}
                 autoFocus
-                onChangeText={name => setId(name)}
+                onChangeText={name => setName(name)}
                 placeholder={"Name"}
                 style={styles.textInputStyle}
                 mode={"flat"}

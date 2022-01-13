@@ -1,6 +1,5 @@
 import * as React from "react";
-import { StyleSheet, ScrollView, Text } from "react-native";
-import { Image } from "react-native-elements";
+import { StyleSheet, ScrollView, Image } from "react-native";
 import { List } from "react-native-paper";
 import { NavigationInjectedProps } from "react-navigation";
 import { getSeries } from "./api/getSeries";
@@ -64,18 +63,20 @@ const SeriesEpisodePickerScreen: React.FC<NavigationInjectedProps> = React.memo(
                     {!!seasons &&
                         Object.keys(seasons).map(season => (
                             <List.Accordion
+                                key={season}
                                 title={`Season ${season}`}
                                 left={props => <List.Icon {...props} icon="folder" />}>
                                 {seasons[season].map(
                                     episode =>
                                         episode.title && (
                                             <List.Item
+                                                key={episode.title}
                                                 title={episode.title}
                                                 left={props =>
                                                     episode.info.movie_image.startsWith("http") ? (
-                                                        <Image />
+                                                        <Image source={episode.info.movie_image} resizeMode="contain" />
                                                     ) : (
-                                                        <List.Icon {...props} icon="folder" />
+                                                        <List.Icon {...props} icon="film" />
                                                     )
                                                 }
                                                 onPress={() =>

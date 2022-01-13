@@ -31,7 +31,7 @@ const Home = React.memo<NavigationInjectedProps>(props => {
         setAccountMenuVisible(null);
         Alert.alert(
             "Delete",
-            `Delete playlist '${account.id}'?`,
+            `Delete playlist '${account.name}'?`,
             [{ text: "Yes", onPress: () => remove(account.id) }, { text: "No" }],
             { cancelable: false },
         );
@@ -57,7 +57,7 @@ const Home = React.memo<NavigationInjectedProps>(props => {
                                 anchor={
                                     <IconButton icon={"pencil"} onPress={() => setAccountMenuVisible(account.id)} />
                                 }>
-                                <Menu.Item title={account.id} titleStyle={{ color: "brown", textAlign: "center" }} />
+                                <Menu.Item title={account.name} titleStyle={{ color: "brown", textAlign: "center" }} />
                                 {/*<Menu.Item*/}
                                 {/*    onPress={() => {}}*/}
                                 {/*    title="Edit"*/}
@@ -71,7 +71,7 @@ const Home = React.memo<NavigationInjectedProps>(props => {
                                     titleStyle={{ color: "red" }}
                                 />
                             </Menu>
-                            <Text>{account.id}</Text>
+                            <Text>{account.name}</Text>
                         </ListItem>
                     ))}
                 </>

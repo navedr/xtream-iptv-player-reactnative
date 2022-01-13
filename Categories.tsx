@@ -130,6 +130,16 @@ class Categories extends React.PureComponent<
             this.search.clearText();
         }
 
+        if (!selectedCategoryItems.length) {
+            listItems.push(
+                <Button
+                    disabled
+                    // style={styles.listItem}
+                    title={"List is empty!!"}
+                />,
+            );
+        }
+
         selectedCategoryItems.forEach(item => {
             if (!item.name.length) {
                 return;
@@ -140,7 +150,6 @@ class Categories extends React.PureComponent<
                 <Button
                     key={item.stream_id}
                     disabled
-                    onPress={() => {}}
                     // style={styles.listItem}
                     title={item.name}
                 />

@@ -3,12 +3,9 @@ import { NavigationInjectedProps } from "react-navigation";
 import ExpoVideoPlayer from "./video-players/ExpoVideoPlayer";
 import { Alert, Linking, Platform } from "react-native";
 import { play } from "react-native-vlc-player";
-
-enum VideoPlayerType {
-    VLC,
-    ExpoAV,
-    Native,
-}
+import ReactNativeVideoPlayer from "./video-players/ReactNativeVideoPlayer";
+import VLCVideoPlayer from "./video-players/VLCVideoPlayer";
+import { VideoPlayerType } from "./constants";
 
 const VideoPlayer: React.FC<NavigationInjectedProps> = React.memo(
     ({
@@ -19,12 +16,32 @@ const VideoPlayer: React.FC<NavigationInjectedProps> = React.memo(
         },
     }) => {
         const { uri } = params;
-        const [playerType, setPlayerType] = React.useState<VideoPlayerType>(VideoPlayerType.VLC);
+        const [playerType, setPlayerType] = React.useState<VideoPlayerType>(VideoPlayerType.ExpoAV);
 
         switch (playerType) {
             case VideoPlayerType.ExpoAV:
-                return <ExpoVideoPlayer uri={uri} />;
+                return (
+                    <ExpoVideoPlayer
+                        uri={uri}
+                        onError={error => {
+                            Alert.alert("Error Playing Video", error, [{ text: "OK" }], { cancelable: false });
+                            goBack();
+                        }}
+                    />
+                );
+            case VideoPlayerType.ReactNative:
+                return <ReactNativeVideoPlayer uri={uri} />;
             case VideoPlayerType.VLC:
+                return (
+                    <VLCVideoPlayer
+                        uri={uri}
+                        onError={error => {
+                            Alert.alert("Error Playing Video", error, [{ text: "OK" }], { cancelable: false });
+                            goBack();
+                        }}
+                    />
+                );
+            case VideoPlayerType.VLCExternal:
                 const url = Platform.OS === "ios" ? "vlc-x-callback://x-callback-url/stream?url=" + uri : uri;
                 Linking.openURL(url).catch(() => {
                     Alert.alert("Player Error", "Could not open VLC player to play the video", [{ text: "OK" }], {

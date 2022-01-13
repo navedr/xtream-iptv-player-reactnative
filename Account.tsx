@@ -103,7 +103,7 @@ const Account = React.memo<NavigationInjectedProps>(({ navigation: { navigate } 
         <>
             {user_info ? (
                 <ScrollView>
-                    <Text style={{ alignSelf: "center", fontSize: 30 }}>Playlist: {current.id}</Text>
+                    <Text style={{ alignSelf: "center", fontSize: 30 }}>Playlist: {current.name}</Text>
                     <ButtonGroup
                         buttons={buttons}
                         containerStyle={{ backgroundColor: color.transparent, borderColor: color.black }}
